@@ -1,0 +1,19 @@
+name: slither
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+    analyze:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Code Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Python
+              uses: actions/setup-python@v4
+              with:
+                  python-version: '3.10'
+
+            - name: Run Analysis
+              uses: crytic/slither-action@v0.3.0
+              with:
+                  fail-on: high
