@@ -2,10 +2,10 @@
 pragma solidity 0.8.20;
 
 struct BlockHeader {
-    bytes4 version;
-    bytes4 timestamp;
+    bytes32 merkleRootHash;
     bytes4 nBits;
     bytes4 nonce;
     bytes32 previousBlockHash;
-    bytes32 merkleRootHash;
+    bytes4 timestamp;
+    bytes4 version;
 }

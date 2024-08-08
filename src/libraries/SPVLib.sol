@@ -8,16 +8,13 @@ import {BlockHeader} from "../Types.sol";
 library SPVLib {
     using Math for uint256;
     using Utils for bytes;
+
     uint256 internal constant DIFFICULTY_EPOCH_PERIOD = 2 * 7 * 24 * 60 * 60; // 2 weeks in seconds
-    uint256 internal constant DIFFICULTY_EPOCH_PERIOD_DIV_4 =
-        DIFFICULTY_EPOCH_PERIOD / 4; // DIFFICULTY_EPOCH_PERIOD divided by 4
-    uint256 internal constant DIFFICULTY_EPOCH_PERIOD_MUL_4 =
-        DIFFICULTY_EPOCH_PERIOD * 4; // DIFFICULTY_EPOCH_PERIOD multiplied by 4
+    uint256 internal constant DIFFICULTY_EPOCH_PERIOD_DIV_4 = DIFFICULTY_EPOCH_PERIOD / 4; // DIFFICULTY_EPOCH_PERIOD divided by 4
+    uint256 internal constant DIFFICULTY_EPOCH_PERIOD_MUL_4 = DIFFICULTY_EPOCH_PERIOD * 4; // DIFFICULTY_EPOCH_PERIOD multiplied by 4
     uint256 internal constant DIFFICULTY_EPOCH_PERIOD_BLOCKS = 2016; // 2 weeks in blocks
 
-    function calculateBlockHash(
-        BlockHeader memory header
-    ) internal pure returns (bytes32) {
+    function calculateBlockHash(BlockHeader memory header) internal pure returns (bytes32) {
         bytes memory headerData = abi.encodePacked(
             header.version,
             header.previousBlockHash,
@@ -31,16 +28,12 @@ library SPVLib {
         return (headerData).doubleHash();
     }
 
-    function verifyProof(
-        BlockHeader memory header,
-        bytes32 txHash,
-        uint256 txIndex,
-        bytes32[] memory proof
-    ) internal pure returns (bool) {
-        bytes32 result = abi
-            .encodePacked(txHash)
-            .convertToBigEndian()
-            .convertToBytes32();
+    function verifyProof(BlockHeader memory header, bytes32 txHash, uint256 txIndex, bytes32[] memory proof)
+        internal
+        pure
+        returns (bool)
+    {
+        bytes32 result = abi.encodePacked(txHash).convertToBigEndian().convertToBytes32();
 
         for (uint256 i = 0; i < proof.length; i++) {
             if (txIndex % 2 == 1) {
@@ -54,29 +47,16 @@ library SPVLib {
         return header.merkleRootHash == result;
     }
 
-    function verifyWork(
-        BlockHeader calldata header
-    ) internal pure returns (bool) {
-        return
-            (
-                (abi.encodePacked(calculateBlockHash(header)))
-                    .convertToBigEndian()
-            ).convertBytesToUint() <
-            (abi.encodePacked(header.nBits)).convertnBitsToTarget();
+    function verifyWork(BlockHeader calldata header) internal pure returns (bool) {
+        return ((abi.encodePacked(calculateBlockHash(header))).convertToBigEndian()).convertBytesToUint()
+            < (abi.encodePacked(header.nBits)).convertnBitsToTarget();
     }
 
-    function verifyTarget(
-        BlockHeader calldata header,
-        uint256 target
-    ) internal pure returns (bool) {
-        return
-            (abi.encodePacked(header.nBits)).convertnBitsToTarget() == target;
+    function verifyTarget(BlockHeader calldata header, uint256 target) internal pure returns (bool) {
+        return (abi.encodePacked(header.nBits)).convertnBitsToTarget() == target;
     }
 
-    function verifyDifficultyEpochTarget(
-        uint256 newTarget,
-        uint256 target
-    ) internal pure returns (bool) {
+    function verifyDifficultyEpochTarget(uint256 newTarget, uint256 target) internal pure returns (bool) {
         if (newTarget >= target) {
             return (newTarget - target) * 100 <= target;
         } else {
@@ -84,23 +64,15 @@ library SPVLib {
         }
     }
 
-    function calculateNewTarget(
-        BlockHeader calldata header,
-        uint256 LDEtarget,
-        bytes4 LDETimestamp
-    ) internal pure returns (uint256 target) {
+    function calculateNewTarget(BlockHeader calldata header, uint256 LDEtarget, bytes4 LDETimestamp)
+        internal
+        pure
+        returns (uint256 target)
+    {
         uint256 _elapsedTime;
-        (, _elapsedTime) = (
-            abi
-                .encodePacked(header.timestamp)
-                .convertToBigEndian()
-                .convertBytesToUint()
-        ).trySub(
-                abi
-                    .encodePacked(LDETimestamp)
-                    .convertToBigEndian()
-                    .convertBytesToUint()
-            );
+        (, _elapsedTime) = (abi.encodePacked(header.timestamp).convertToBigEndian().convertBytesToUint()).trySub(
+            abi.encodePacked(LDETimestamp).convertToBigEndian().convertBytesToUint()
+        );
 
         if (_elapsedTime < DIFFICULTY_EPOCH_PERIOD_DIV_4) {
             _elapsedTime = DIFFICULTY_EPOCH_PERIOD_DIV_4;
@@ -117,10 +89,7 @@ library SPVLib {
         return _adjusted;
     }
 
-    function concatHash(
-        bytes32 left,
-        bytes32 right
-    ) internal pure returns (bytes32) {
+    function concatHash(bytes32 left, bytes32 right) internal pure returns (bytes32) {
         return abi.encodePacked(left, right).doubleHash();
     }
 }
