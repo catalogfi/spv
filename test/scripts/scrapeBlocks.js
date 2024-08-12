@@ -1,11 +1,11 @@
 const { writeFileSync } = require("fs");
 const { formatBlock } = require("./formatBlock");
 const { join } = require("path");
-const API_URL = "https://mempool.space/api/v1/blocks/";
+const API_URL = "https://mempool.space/testnet4/api/blocks/";
 
 (async () => {
-    let start = 840672;
-    let end = 842700;
+    let start = (38304 - 2016);
+    let end = 38310;
     const blocks = [];
     while (end >= start) {
         const blockResponse = await fetch(API_URL + end).then((res) =>
@@ -20,7 +20,7 @@ const API_URL = "https://mempool.space/api/v1/blocks/";
     }
 
     writeFileSync(
-        join(__dirname, "..", "fixtures", "difficultyEpoch.json"),
+        join(__dirname, "..", "fixtures", "difficultyEpoch_testnet.json"),
         JSON.stringify(blocks.reverse())
     );
 })();

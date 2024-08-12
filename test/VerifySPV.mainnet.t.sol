@@ -38,7 +38,7 @@ contract VerifySPVTest is Test {
         for (uint256 i = 0; i < f.length; i++) {
             difficultyEpoch.push(toBlockHeader(f[i]));
         }
-        verifySPV = new VerifySPV(difficultyEpoch[0]);
+        verifySPV = new VerifySPV(difficultyEpoch[0], true);
     }
 
     function toBlockHeader(FixtureBlockHeader memory f) private pure returns (BlockHeader memory) {
@@ -153,7 +153,13 @@ contract VerifySPVTest is Test {
         epochForTxVerification[0] = difficultyEpoch[0];
 
         vm.expectRevert("VerifySPV: inclusion verification needs all 72 blocks in the epoch");
-        verifySPV.verifyTxInclusion(epochForTxVerification, 0, 0, 0x723026cc979bb3b82d1c1749450a66444e17f66bfe7bc2188bc2b2fc5ad8a8a3, new bytes32[](12));
+        verifySPV.verifyTxInclusion(
+            epochForTxVerification,
+            0,
+            0,
+            0x723026cc979bb3b82d1c1749450a66444e17f66bfe7bc2188bc2b2fc5ad8a8a3,
+            new bytes32[](12)
+        );
     }
 
     function testShouldntVerifyIfInvalidStartingBlock() public {
@@ -170,13 +176,17 @@ contract VerifySPVTest is Test {
 
         verifySPV.registerBlock(epoch);
 
-        vm.expectRevert("VerifySPV: invalid epoch, starting block not on chain");   
+        vm.expectRevert("VerifySPV: invalid epoch, starting block not on chain");
         verifySPV.verifyTxInclusion(
-            epochForTxVerification, 3, 636, 0x723026cc979bb3b82d1c1749450a66444e17f66bfe7bc2188bc2b2fc5ad8a8a3, new bytes32[](12)
+            epochForTxVerification,
+            3,
+            636,
+            0x723026cc979bb3b82d1c1749450a66444e17f66bfe7bc2188bc2b2fc5ad8a8a3,
+            new bytes32[](12)
         );
     }
 
-    function testShouldntVerifyInvalidEndingBlock() public { 
+    function testShouldntVerifyInvalidEndingBlock() public {
         BlockHeader[] memory epochForTxVerification = new BlockHeader[](73);
 
         uint256 counter = 0;
@@ -186,9 +196,13 @@ contract VerifySPVTest is Test {
             counter++;
         }
 
-        vm.expectRevert("VerifySPV: invalid epoch, ending block not on chain");   
+        vm.expectRevert("VerifySPV: invalid epoch, ending block not on chain");
         verifySPV.verifyTxInclusion(
-            epochForTxVerification, 3, 636, 0x723026cc979bb3b82d1c1749450a66444e17f66bfe7bc2188bc2b2fc5ad8a8a3, new bytes32[](12)
+            epochForTxVerification,
+            3,
+            636,
+            0x723026cc979bb3b82d1c1749450a66444e17f66bfe7bc2188bc2b2fc5ad8a8a3,
+            new bytes32[](12)
         );
     }
 
@@ -235,9 +249,9 @@ contract VerifySPVTest is Test {
     }
 
     function testShouldAdjustNewDifficulty() public {
-        for(uint i = 0; i < 28; i++) {
+        for (uint256 i = 0; i < 28; i++) {
             (BlockHeader[] memory epoch) = new BlockHeader[](76);
-            for(uint j = 0; j < 76; j++) {
+            for (uint256 j = 0; j < 76; j++) {
                 epoch[j] = difficultyEpoch[i * 72 + j];
             }
 
@@ -248,9 +262,9 @@ contract VerifySPVTest is Test {
     }
 
     function testShouldntVerifyInvalidDifficultyEpoch() public {
-        for(uint i = 0; i < 28; i++) {
+        for (uint256 i = 0; i < 28; i++) {
             (BlockHeader[] memory epoch) = new BlockHeader[](76);
-            for(uint j = 0; j < 76; j++) {
+            for (uint256 j = 0; j < 76; j++) {
                 epoch[j] = difficultyEpoch[i * 72 + j];
             }
 
@@ -258,7 +272,7 @@ contract VerifySPVTest is Test {
                 epoch[2].previousBlockHash = epoch[3].previousBlockHash;
                 vm.expectRevert("VerifySPV: pre subsequence in difficulty epoch failed");
                 verifySPV.registerBlock(epoch);
-            }else {
+            } else {
                 verifySPV.registerBlock(epoch);
             }
         }
@@ -267,9 +281,9 @@ contract VerifySPVTest is Test {
     }
 
     function testShouldntVerifyInvalidDifficultyEpochTarget() public {
-        for(uint i = 0; i < 28; i++) {
+        for (uint256 i = 0; i < 28; i++) {
             (BlockHeader[] memory epoch) = new BlockHeader[](76);
-            for(uint j = 0; j < 76; j++) {
+            for (uint256 j = 0; j < 76; j++) {
                 epoch[j] = difficultyEpoch[i * 72 + j];
             }
 
@@ -277,7 +291,7 @@ contract VerifySPVTest is Test {
                 epoch[72].timestamp = difficultyEpoch[0].timestamp;
                 vm.expectRevert("VerifySPV: adjusted difficulty is not in allowed range");
                 verifySPV.registerBlock(epoch);
-            }else {
+            } else {
                 verifySPV.registerBlock(epoch);
             }
         }
@@ -286,9 +300,9 @@ contract VerifySPVTest is Test {
     }
 
     function testShouldntVerifyInvalidDifficultyBlockPreviousHash() public {
-        for(uint i = 0; i < 28; i++) {
+        for (uint256 i = 0; i < 28; i++) {
             (BlockHeader[] memory epoch) = new BlockHeader[](76);
-            for(uint j = 0; j < 76; j++) {
+            for (uint256 j = 0; j < 76; j++) {
                 epoch[j] = difficultyEpoch[i * 72 + j];
             }
 
@@ -296,7 +310,7 @@ contract VerifySPVTest is Test {
                 epoch[72].previousBlockHash = difficultyEpoch[0].previousBlockHash;
                 vm.expectRevert("VerifySPV: difficulty epoch validation failed");
                 verifySPV.registerBlock(epoch);
-            }else {
+            } else {
                 verifySPV.registerBlock(epoch);
             }
         }
@@ -305,9 +319,9 @@ contract VerifySPVTest is Test {
     }
 
     function testShouldntVerifyInvalidPostSequenceInDifficultyEpoch() public {
-        for(uint i = 0; i < 28; i++) {
+        for (uint256 i = 0; i < 28; i++) {
             (BlockHeader[] memory epoch) = new BlockHeader[](76);
-            for(uint j = 0; j < 76; j++) {
+            for (uint256 j = 0; j < 76; j++) {
                 epoch[j] = difficultyEpoch[i * 72 + j];
             }
 
@@ -315,7 +329,7 @@ contract VerifySPVTest is Test {
                 epoch[74].previousBlockHash = epoch[3].previousBlockHash;
                 vm.expectRevert("VerifySPV: post subsequence in difficulty epoch failed");
                 verifySPV.registerBlock(epoch);
-            }else {
+            } else {
                 verifySPV.registerBlock(epoch);
             }
         }

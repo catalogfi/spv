@@ -15,48 +15,38 @@ struct VerifyTx {
     bytes32 txHash;
 }
 
-contract SPVLibHarness is Test {
-    using SPVLib for BlockHeader;
-
-    function _calculateNewTarget(BlockHeader calldata header, uint256 LDEtarget, bytes4 LDETimestamp) public pure returns (uint256) {
-        return header.calculateNewTarget(LDEtarget, LDETimestamp);
-    }
-}
-
 contract SPVLibIndirection is Test {
-    SPVLibHarness spvLibHarness = new SPVLibHarness();
-
-    function _verifyWork(BlockHeader calldata header) public pure returns (bool) {
-        return SPVLib.verifyWork(header);
+    function _verifyWork(BlockHeader calldata header, bool isMainnet) public pure returns (bool) {
+        return SPVLib.verifyWork(header, isMainnet);
     }
 
-    function verifyWork(BlockHeader memory header) public view returns (bool) {
-        return this._verifyWork(header);
+    function verifyWork(BlockHeader memory header, bool isMainnet) public view returns (bool) {
+        return this._verifyWork(header, isMainnet);
     }
 
-    function _calculateNewTarget(BlockHeader calldata header, uint256 LDEtarget, bytes4 LDETimestamp) public view returns (uint256) {
-        return spvLibHarness._calculateNewTarget(header, LDEtarget, LDETimestamp);
+    function _calculateNewTarget(BlockHeader calldata header, uint256 LDEtarget, bytes4 LDETimestamp)
+        public
+        pure
+        returns (uint256)
+    {
+        return SPVLib.calculateNewTarget(header, LDEtarget, LDETimestamp);
     }
 
-    function calculateNewTarget(BlockHeader memory header, uint256 LDEtarget, bytes4 LDETimestamp) public view returns (uint256) {
+    function calculateNewTarget(BlockHeader memory header, uint256 LDEtarget, bytes4 LDETimestamp)
+        public
+        view
+        returns (uint256)
+    {
         return this._calculateNewTarget(header, LDEtarget, LDETimestamp);
     }
 }
 
-// contract SPVLibHarness is SPVLib { 
-//     convertnBitsToTarget
-// }
-
 contract SPVLibTestTest is Test {
     using stdJson for string;
-    // SPVLib spvLib;
 
-    // UtilsIndirection utilsIndirection;
     SPVLibIndirection spvLibIndirection;
 
     function setUp() public {
-        // spvLib = new SPVLib();
-        // utilsIndirection = new UtilsIndirection();
         spvLibIndirection = new SPVLibIndirection();
     }
 
@@ -119,9 +109,8 @@ contract SPVLibTestTest is Test {
             merkleRootHash: 0x1977fa84d0689f38821e19016cb32b3ca6ab93ec885dcda968b5f2998a76b7f3
         });
 
-        assertEq(spvLibIndirection.verifyWork(header), true, "Work verification failed");
+        assertEq(spvLibIndirection.verifyWork(header, true), true, "Work verification failed");
     }
-
 
     //https://mempool.space/api/block/00000000000000000001d2cbad2209f51143679b6797aef393a45e82eb88a9ae
     //https://mempool.space/api/block/000000000000000000026b90d09b5e4fba615eadfc4ce2a19f6a68c9c18d4a2e
@@ -149,6 +138,8 @@ contract SPVLibTestTest is Test {
         uint256 actualNewTarget = spvLibIndirection.calculateNewTarget(newHeader, oldTarget, oldHeader.timestamp);
         uint256 expectedNewTarget = Utils.convertnBitsToTarget(bytes4ToBytes(newHeader.nBits));
 
-        assertEq(SPVLib.verifyDifficultyEpochTarget(expectedNewTarget, actualNewTarget), true, "New target does not match");
+        assertEq(
+            SPVLib.verifyDifficultyEpochTarget(expectedNewTarget, actualNewTarget), true, "New target does not match"
+        );
     }
 }

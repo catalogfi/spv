@@ -16,11 +16,14 @@ contract VerifySPV is IVerifySPV {
     bytes32 public LDEBlockHash;
     // epoch is incremented for every block register ,1 epoch = 72 blocks
     uint256 public epoch;
+    // 1 for mainnet, 2 for testnet, 3 for regtest
+    bool isMainnet;
 
     event BlockRegistered(bytes32 blockHash);
 
-    constructor(BlockHeader memory genesisHeader) {
+    constructor(BlockHeader memory genesisHeader, bool _isMainnet) {
         LDEBlockHash = genesisHeader.calculateBlockHash();
+        isMainnet = _isMainnet;
         blockHeaders[genesisHeader.calculateBlockHash()] = genesisHeader;
         epoch = 0;
     }
@@ -80,7 +83,7 @@ contract VerifySPV is IVerifySPV {
             );
             require(
                 blockSequence[71].calculateBlockHash() == blockSequence[72].previousBlockHash
-                    && blockSequence[72].verifyWork(),
+                    && blockSequence[72].verifyWork(isMainnet),
                 "VerifySPV: difficulty epoch validation failed"
             );
             require(
@@ -93,12 +96,12 @@ contract VerifySPV is IVerifySPV {
         }
     }
 
-    function verifySubSequence(BlockHeader[] calldata blockSequence, uint256 target) internal pure returns (bool) {
+    function verifySubSequence(BlockHeader[] calldata blockSequence, uint256 target) internal view returns (bool) {
         for (uint256 i = 1; i < blockSequence.length; i++) {
             if (
                 !(
                     blockSequence[i - 1].calculateBlockHash() == blockSequence[i].previousBlockHash
-                        && blockSequence[i].verifyTarget(target) && blockSequence[i].verifyWork()
+                        && blockSequence[i].verifyTarget(target) && blockSequence[i].verifyWork(isMainnet)
                 )
             ) {
                 return false;
