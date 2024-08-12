@@ -5,7 +5,6 @@ import {SPVLib} from "src/libraries/SPVLib.sol";
 import {Utils} from "src/Utils.sol";
 import {BlockHeader} from "src/Types.sol";
 import {Test} from "forge-std/Test.sol";
-import {console} from "forge-std/console.sol";
 import "forge-std/StdJson.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 

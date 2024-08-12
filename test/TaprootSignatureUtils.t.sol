@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {TaprootSignatureUtils} from "src/libraries/TaprootSignatureUtils.sol";
 import {EllipticCurve} from "src/libraries/EllipticCurve.sol";
-import {console} from "forge-std/console.sol";
 
 contract TaprootSignatureUtilsTest is Test {
     uint256 public constant GX = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798;

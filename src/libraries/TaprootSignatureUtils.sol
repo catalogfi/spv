@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import {EllipticCurve} from "./EllipticCurve.sol";
-import {console} from "forge-std/console.sol";
 
 library TaprootSignatureUtils {
     uint256 public constant AA = 0;

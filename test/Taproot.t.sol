@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
 import {Taproot} from "src/libraries/Taproot.sol";
-import {console} from "forge-std/console.sol";
 
 contract TaprootIndirection is Test {
     function _serializeScript(bytes calldata script) public pure returns (bytes memory) {

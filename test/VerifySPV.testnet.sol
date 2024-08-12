@@ -7,7 +7,6 @@ import {SPVLib} from "src/libraries/SPVLib.sol";
 import {BlockHeader} from "src/Types.sol";
 import {VerifySPV} from "src/VerifySPV.sol";
 import {Test} from "forge-std/Test.sol";
-import {console} from "forge-std/console.sol";
 import "forge-std/StdJson.sol";
 
 struct FixtureBlockHeader {

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import {BlockHeader} from "./Types.sol";
-import {console} from "forge-std/console.sol";
 
 library Utils {
     function convertBytesToUint(bytes memory b) internal pure returns (uint256) {
