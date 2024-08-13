@@ -52,7 +52,7 @@ contract TaprootSignatureUtilsTest is Test {
         assertEq(verified, false, "Schnorr signature verification failed");
     }
 
-    function testShouldNotAccessWrongSignatureLength() public { 
+    function testShouldNotAccessWrongSignatureLength() public {
         uint256 PX = 0x21ef19b8f9258d0b012d16112b2f4741d37f0da7c14a048b7c4209439b40c1ad;
         bytes memory messageHash = hex"b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9";
 

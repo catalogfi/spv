@@ -48,12 +48,9 @@ library SPVLib {
     }
 
     // for modularity we expect the caller to handle the case in testnet4 if the difficulty is 1
-    function verifyWork(BlockHeader calldata header, bool isMainnet) internal pure returns (bool) {
-        if (isMainnet) {
-            return ((abi.encodePacked(calculateBlockHash(header))).convertToBigEndian()).convertBytesToUint()
-                < (abi.encodePacked(header.nBits)).convertnBitsToTarget();
-        }
-        return true;
+    function verifyWork(BlockHeader calldata header) internal pure returns (bool) {
+        return ((abi.encodePacked(calculateBlockHash(header))).convertToBigEndian()).convertBytesToUint()
+            < (abi.encodePacked(header.nBits)).convertnBitsToTarget();
     }
 
     function verifyTarget(BlockHeader calldata header, uint256 target) internal pure returns (bool) {

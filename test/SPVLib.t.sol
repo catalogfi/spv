@@ -15,12 +15,12 @@ struct VerifyTx {
 }
 
 contract SPVLibIndirection is Test {
-    function _verifyWork(BlockHeader calldata header, bool isMainnet) public pure returns (bool) {
-        return SPVLib.verifyWork(header, isMainnet);
+    function _verifyWork(BlockHeader calldata header) public pure returns (bool) {
+        return SPVLib.verifyWork(header);
     }
 
-    function verifyWork(BlockHeader memory header, bool isMainnet) public view returns (bool) {
-        return this._verifyWork(header, isMainnet);
+    function verifyWork(BlockHeader memory header) public view returns (bool) {
+        return this._verifyWork(header);
     }
 
     function _calculateNewTarget(BlockHeader calldata header, uint256 LDEtarget, bytes4 LDETimestamp)
@@ -108,7 +108,7 @@ contract SPVLibTestTest is Test {
             merkleRootHash: 0x1977fa84d0689f38821e19016cb32b3ca6ab93ec885dcda968b5f2998a76b7f3
         });
 
-        assertEq(spvLibIndirection.verifyWork(header, true), true, "Work verification failed");
+        assertEq(spvLibIndirection.verifyWork(header), true, "Work verification failed");
     }
 
     //https://mempool.space/api/block/00000000000000000001d2cbad2209f51143679b6797aef393a45e82eb88a9ae

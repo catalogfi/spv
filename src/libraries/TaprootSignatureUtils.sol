@@ -30,7 +30,8 @@ library TaprootSignatureUtils {
 
         uint256 RY = EllipticCurve.deriveY(0x02, RX, AA, BB, PP);
 
-        bytes32 messageChallenge = sha256(bytes.concat(BIP340_CHALLENGE_HASH, BIP340_CHALLENGE_HASH, bytes32(RX), bytes32(PX), message));
+        bytes32 messageChallenge =
+            sha256(bytes.concat(BIP340_CHALLENGE_HASH, BIP340_CHALLENGE_HASH, bytes32(RX), bytes32(PX), message));
 
         bytes32 sP_x = bytes32(OO - mulmod(s, PX, OO));
         bytes32 eP_x = bytes32(OO - mulmod(uint256(messageChallenge), PX, OO));

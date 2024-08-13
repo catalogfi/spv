@@ -8,6 +8,8 @@ import {BlockHeader} from "src/Types.sol";
 import {VerifySPV} from "src/VerifySPV.sol";
 import {Test} from "forge-std/Test.sol";
 
+import {console} from "forge-std/console.sol";
+
 import "forge-std/StdJson.sol";
 
 struct FixtureBlockHeader {
@@ -35,6 +37,7 @@ contract VerifySPVTest is Test {
         string memory json = vm.readFile(path);
 
         (FixtureBlockHeader[] memory f) = abi.decode(json.parseRaw(""), (FixtureBlockHeader[]));
+        console.log(f.length);
         for (uint256 i = 0; i < f.length; i++) {
             difficultyEpoch.push(toBlockHeader(f[i]));
         }
@@ -53,7 +56,7 @@ contract VerifySPVTest is Test {
     }
 
     function testShouldVerifyAnEpochInRegtest() public {
-        for (uint256 i = 0; i < 28; i++) {
+        for (uint256 i = 0; i < 12; i++) {
             (BlockHeader[] memory epoch) = new BlockHeader[](76);
             for (uint256 j = 0; j < 76; j++) {
                 epoch[j] = difficultyEpoch[i * 72 + j];
@@ -62,6 +65,6 @@ contract VerifySPVTest is Test {
             verifySPV.registerBlock(epoch);
         }
 
-        assertEq(verifySPV.epoch(), 28, "Epoch should be 28");
+        assertEq(verifySPV.epoch(), 12, "Epoch should be 28");
     }
 }

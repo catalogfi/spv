@@ -16,7 +16,6 @@ contract VerifySPV is IVerifySPV {
     bytes32 public LDEBlockHash;
     // epoch is incremented for every block register ,1 epoch = 72 blocks
     uint256 public epoch;
-    // 1 for mainnet, 2 for testnet, 3 for regtest
     bool isMainnet;
 
     event BlockRegistered(bytes32 blockHash);
@@ -82,10 +81,13 @@ contract VerifySPV is IVerifySPV {
                 "VerifySPV: adjusted difficulty is not in allowed range"
             );
             require(
-                blockSequence[71].calculateBlockHash() == blockSequence[72].previousBlockHash
-                    && blockSequence[72].verifyWork(isMainnet),
+                blockSequence[71].calculateBlockHash() == blockSequence[72].previousBlockHash,
                 "VerifySPV: difficulty epoch validation failed"
             );
+            if(isMainnet) {
+                require(blockSequence[72].verifyWork(), "VerifySPV: difficulty epoch validation failed");
+            }
+
             require(
                 verifySubSequence(blockSequence[73:], newTarget),
                 "VerifySPV: post subsequence in difficulty epoch failed"
@@ -101,12 +103,14 @@ contract VerifySPV is IVerifySPV {
             if (
                 !(
                     blockSequence[i - 1].calculateBlockHash() == blockSequence[i].previousBlockHash
-                        && blockSequence[i].verifyTarget(target) && blockSequence[i].verifyWork(isMainnet)
                 )
-            ) {
-                return false;
+            ) return false;
+            else {
+                if(isMainnet) continue;
+                if (!(blockSequence[i].verifyTarget(target) && blockSequence[i].verifyWork())) return false;
             }
         }
+
         return true;
     }
 }

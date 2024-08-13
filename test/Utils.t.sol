@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {BlockHeader} from "src/Types.sol";
 import {Utils} from "src/Utils.sol";
 
-struct DecodeVarintFixture { 
+struct DecodeVarintFixture {
     bytes input;
     uint8 byteLength;
     bytes expected;
@@ -118,65 +118,37 @@ contract UtilsTest is Test {
         assertEq(90666502495565, difficulty, "Difficulty does not match");
     }
 
-    function testDecodeVaruintShouldComputeProperly() public pure { 
+    function testDecodeVaruintShouldComputeProperly() public pure {
         DecodeVarintFixture[] memory fixtures = new DecodeVarintFixture[](4);
 
-        fixtures[0] = DecodeVarintFixture({
-            input: hex"fc",
-            byteLength: 1,
-            expected: hex"fc"
-        });
+        fixtures[0] = DecodeVarintFixture({input: hex"fc", byteLength: 1, expected: hex"fc"});
 
-        fixtures[1] = DecodeVarintFixture({
-            input: hex"fdfd00", 
-            byteLength: 3, 
-            expected: hex"00fd"
-        });
+        fixtures[1] = DecodeVarintFixture({input: hex"fdfd00", byteLength: 3, expected: hex"00fd"});
 
-        fixtures[2] = DecodeVarintFixture({
-            input: hex"fe00000100",
-            byteLength: 5, 
-            expected: hex"00010000"
-        });
+        fixtures[2] = DecodeVarintFixture({input: hex"fe00000100", byteLength: 5, expected: hex"00010000"});
 
-        fixtures[3] = DecodeVarintFixture({
-            input: hex"ff0000000001000000", 
-            byteLength: 9, 
-            expected: hex"0000000100000000"
-        });
+        fixtures[3] =
+            DecodeVarintFixture({input: hex"ff0000000001000000", byteLength: 9, expected: hex"0000000100000000"});
 
-        for(uint i = 0; i < 4; i++) {
+        for (uint256 i = 0; i < 4; i++) {
             (uint8 byteLength, bytes memory expected) = Utils.decodeVarint(fixtures[i].input, 0);
             assertEq(fixtures[i].byteLength, byteLength, "Byte length does not match");
             assertEq(fixtures[i].expected, expected, "Expected bytes do not match");
         }
     }
 
-    function testEncodeVarintShouldComputeProperly() public pure { 
+    function testEncodeVarintShouldComputeProperly() public pure {
         EncodeVarintFixture[] memory fixtures = new EncodeVarintFixture[](4);
 
-        fixtures[0] = EncodeVarintFixture({
-            input: 0xfc,
-            output: hex"fc"
-        });
+        fixtures[0] = EncodeVarintFixture({input: 0xfc, output: hex"fc"});
 
-        fixtures[1] = EncodeVarintFixture({
-            input: 0x00fd,
-            output: hex"fdfd00"
-        });
+        fixtures[1] = EncodeVarintFixture({input: 0x00fd, output: hex"fdfd00"});
 
-        fixtures[2] = EncodeVarintFixture({
-            input: 0x00010000,
-            output: hex"fe00000100"
-        });
+        fixtures[2] = EncodeVarintFixture({input: 0x00010000, output: hex"fe00000100"});
 
-        fixtures[3] = EncodeVarintFixture({
-            input: 0x0000000100000000,
-            output: hex"ff0000000001000000"
-        });
+        fixtures[3] = EncodeVarintFixture({input: 0x0000000100000000, output: hex"ff0000000001000000"});
 
-
-        for(uint i = 0; i < 4; i++) {
+        for (uint256 i = 0; i < 4; i++) {
             bytes memory expected = Utils.encodeVarint(fixtures[i].input);
             assertEq(fixtures[i].output, expected, "Expected bytes do not match");
         }
