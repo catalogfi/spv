@@ -56,7 +56,7 @@ contract VerifySPVTest is Test {
     }
 
     function testShouldVerifyAnEpochInRegtest() public {
-        for (uint256 i = 0; i < 12; i++) {
+        for (uint256 i = 0; i < 29; i++) {
             (BlockHeader[] memory epoch) = new BlockHeader[](76);
             for (uint256 j = 0; j < 76; j++) {
                 epoch[j] = difficultyEpoch[i * 72 + j];
@@ -65,6 +65,6 @@ contract VerifySPVTest is Test {
             verifySPV.registerBlock(epoch);
         }
 
-        assertEq(verifySPV.epoch(), 12, "Epoch should be 28");
+        assertEq(verifySPV.epoch(), 29, "Epoch should be 28");
     }
 }

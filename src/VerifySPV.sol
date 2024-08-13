@@ -74,24 +74,26 @@ contract VerifySPV is IVerifySPV {
             require(
                 verifySubSequence(blockSequence[:72], target), "VerifySPV: pre subsequence in difficulty epoch failed"
             );
-            uint256 adjustedTarget = blockSequence[72].calculateNewTarget(target, blockHeaders[LDEBlockHash].timestamp);
-            uint256 newTarget = (abi.encodePacked((blockSequence[72].nBits))).convertnBitsToTarget();
-            require(
-                SPVLib.verifyDifficultyEpochTarget(adjustedTarget, newTarget),
-                "VerifySPV: adjusted difficulty is not in allowed range"
-            );
+            if(isMainnet) {
+                uint256 adjustedTarget = blockSequence[72].calculateNewTarget(target, blockHeaders[LDEBlockHash].timestamp);
+                uint256 newTarget = (abi.encodePacked((blockSequence[72].nBits))).convertnBitsToTarget();
+                require(
+                    SPVLib.verifyDifficultyEpochTarget(adjustedTarget, newTarget),
+                    "VerifySPV: adjusted difficulty is not in allowed range"
+                );
+                require(blockSequence[72].verifyWork(), "VerifySPV: difficulty epoch validation failed");
+                require(
+                    verifySubSequence(blockSequence[73:], newTarget),
+                    "VerifySPV: post subsequence in difficulty epoch failed"
+                );
+            }else {
+                verifySubSequence(blockSequence[73:], 1);
+            }
             require(
                 blockSequence[71].calculateBlockHash() == blockSequence[72].previousBlockHash,
                 "VerifySPV: difficulty epoch validation failed"
             );
-            if(isMainnet) {
-                require(blockSequence[72].verifyWork(), "VerifySPV: difficulty epoch validation failed");
-            }
 
-            require(
-                verifySubSequence(blockSequence[73:], newTarget),
-                "VerifySPV: post subsequence in difficulty epoch failed"
-            );
             LDEBlockHash = blockSequence[72].calculateBlockHash();
         } else {
             require(verifySubSequence(blockSequence, target), "VerifySPV: sequence verification failed");

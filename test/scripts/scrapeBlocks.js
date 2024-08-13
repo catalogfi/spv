@@ -4,8 +4,8 @@ const { join } = require("path");
 const API_URL = "http://localhost:30000/blocks/";
 
 (async () => {
-    let start = 2000;
-    let end = 4032;
+    let start = 72;
+    let end = 2020;
     const blocks = [];
     while (end >= start) {
         const blockResponse = await fetch(API_URL + end).then((res) =>
