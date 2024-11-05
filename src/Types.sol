@@ -9,3 +9,13 @@ struct BlockHeader {
     bytes4 timestamp;
     bytes4 version;
 }
+
+struct Outpoint {
+    bytes spk;
+    uint32 amount;
+}
+
+struct Prevout {
+    bytes32 txid;
+    uint32 vout;
+}
