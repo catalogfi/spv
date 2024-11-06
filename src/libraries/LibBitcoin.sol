@@ -1,9 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {BlockHeader, Prevout, Outpoint} from "./Types.sol";
+struct BlockHeader {
+    bytes32 merkleRootHash;
+    bytes4 nBits;
+    bytes4 nonce;
+    bytes32 previousBlockHash;
+    bytes4 timestamp;
+    bytes4 version;
+}
 
-library Utils {
+struct Outpoint {
+    bytes spk;
+    uint32 amount;
+}
+
+struct Prevout {
+    bytes32 txid;
+    uint32 vout;
+}
+
+library LibBitcoin {
     function convertToBigEndian(
         bytes memory bytesLE
     ) internal pure returns (bytes memory) {
@@ -147,10 +164,10 @@ library Utils {
         uint256 offset
     ) public pure returns (uint256 newOffset, Prevout memory prevout) {
         prevout.txid = bytes32(
-            Utils.convertToBigEndian(txHex[offset:offset + 32])
+            convertToBigEndian(txHex[offset:offset + 32])
         );
         prevout.vout = uint32(
-            bytes4(Utils.convertToBigEndian(txHex[offset + 32:offset + 36]))
+            bytes4(convertToBigEndian(txHex[offset + 32:offset + 36]))
         );
         offset += 36;
 

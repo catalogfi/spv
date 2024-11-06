@@ -3,9 +3,9 @@
 pragma solidity ^0.8.5;
 
 import {EllipticCurve} from "./EllipticCurve.sol";
-import {Utils} from "../Utils.sol";
+import {LibBitcoin} from "./LibBitcoin.sol";
 
-library Taproot {
+library LibTaproot {
     uint256 public constant GX = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798;
     uint256 public constant GY = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8;
     uint256 public constant AA = 0;
@@ -23,6 +23,57 @@ library Taproot {
         22537504475708154238330251540244790414456712057027634449505794721772594235652;
 
     bytes1 public constant LEAF_VERSION = 0xC0;
+    bytes32 public constant BIP340_CHALLENGE_HASH =
+        0x7BB52D7A9FEF58323EB1BF7A407DB382D2F3F2D81BB1224F49FE518F6D48D37C;
+
+    function pubkeyToAddress(
+        bytes memory pubkey
+    ) internal pure returns (address) {
+        bytes32 hash = keccak256(pubkey);
+        return address(uint160(uint256(hash)));
+    }
+
+    function verifySchnorr(
+        uint8 parity,
+        uint256 PX,
+        bytes32[] memory signature,
+        bytes memory message
+    ) external pure returns (bool) {
+        require(parity < 2, "Parity should be 0 or 1");
+        require(
+            signature.length == 2,
+            "Signature should be an array of length 2, [R, s]"
+        );
+
+        uint256 RX = uint256(signature[0]);
+        uint256 s = uint256(signature[1]);
+
+        uint256 RY = EllipticCurve.deriveY(0x02, RX, AA, BB, PP);
+
+        bytes32 messageChallenge = sha256(
+            bytes.concat(
+                BIP340_CHALLENGE_HASH,
+                BIP340_CHALLENGE_HASH,
+                bytes32(RX),
+                bytes32(PX),
+                message
+            )
+        );
+
+        bytes32 sP_x = bytes32(OO - mulmod(s, PX, OO));
+        bytes32 eP_x = bytes32(OO - mulmod(uint256(messageChallenge), PX, OO));
+
+        address computedAddress = ecrecover(
+            sP_x,
+            parity + 27,
+            bytes32(PX),
+            eP_x
+        );
+
+        require(computedAddress != address(0), "Invalid signature");
+
+        return pubkeyToAddress(abi.encodePacked(RX, RY)) == computedAddress;
+    }
 
     function tweak(uint256 PX, uint256 PY, uint256 tweakValue) internal pure returns (uint256, uint256) {
         (uint256 TX, uint256 TY) = EllipticCurve.ecMul(tweakValue, GX, GY, AA, PP);
@@ -55,7 +106,7 @@ library Taproot {
 
     function serializeScript(bytes calldata script) internal pure returns (bytes memory) {
         require(script.length < 0xffffffff, "Taproot: Script too long");
-        return bytes.concat(LEAF_VERSION, Utils.encodeVarint(uint64(script.length)), script);
+        return bytes.concat(LEAF_VERSION, LibBitcoin.encodeVarint(uint64(script.length)), script);
     }
 
     function computeMastRootFromMerkleProof(bytes calldata script, bytes32[] calldata merkleProof)

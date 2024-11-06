@@ -2,12 +2,11 @@
 pragma solidity ^0.8.20;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {Utils} from "../Utils.sol";
-import {BlockHeader} from "../Types.sol";
+import {LibBitcoin, BlockHeader} from "./LibBitcoin.sol";
 
 library SPVLib {
     using Math for uint256;
-    using Utils for bytes;
+    using LibBitcoin for bytes;
 
     uint256 internal constant DIFFICULTY_EPOCH_PERIOD = 2 * 7 * 24 * 60 * 60; // 2 weeks in seconds
     uint256 internal constant DIFFICULTY_EPOCH_PERIOD_DIV_4 =

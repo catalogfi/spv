@@ -2,10 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {IVerifySPV} from "./interfaces/IVerifySPV.sol";
-import {BlockHeader, SPVLib} from "./libraries/SPVLib.sol";
-import {Utils} from "./Utils.sol";
-
-import {Prevout, Outpoint} from "./Types.sol";
+import {BlockHeader, Prevout, Outpoint, SPVLib} from "./libraries/LibSPV.sol";
 
 struct BlockRecord {
     BlockHeader header;

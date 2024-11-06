@@ -10,7 +10,7 @@ pragma solidity ^0.8.2;
  * @author Witnet Foundation
  * https://github.com/witnet/elliptic-curve-solidity
  */
-library EllipticCurve {
+library LibEllipticCurve {
     // Pre-computed constant for 2 ** 255
     uint256 private constant U255_MAX_PLUS_1 =
         57896044618658097711785492504343953926634992332820282019728792003956564819968;
