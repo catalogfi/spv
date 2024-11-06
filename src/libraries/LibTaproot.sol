@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.5;
 
-import {EllipticCurve} from "./EllipticCurve.sol";
+import {LibEllipticCurve} from "./LibEllipticCurve.sol";
 import {LibBitcoin} from "./LibBitcoin.sol";
 
 library LibTaproot {
@@ -48,7 +48,7 @@ library LibTaproot {
         uint256 RX = uint256(signature[0]);
         uint256 s = uint256(signature[1]);
 
-        uint256 RY = EllipticCurve.deriveY(0x02, RX, AA, BB, PP);
+        uint256 RY = LibEllipticCurve.deriveY(0x02, RX, AA, BB, PP);
 
         bytes32 messageChallenge = sha256(
             bytes.concat(
@@ -76,8 +76,8 @@ library LibTaproot {
     }
 
     function tweak(uint256 PX, uint256 PY, uint256 tweakValue) internal pure returns (uint256, uint256) {
-        (uint256 TX, uint256 TY) = EllipticCurve.ecMul(tweakValue, GX, GY, AA, PP);
-        (uint256 QX, uint256 QY) = EllipticCurve.ecAdd(PX, PY, TX, TY, AA, PP);
+        (uint256 TX, uint256 TY) = LibEllipticCurve.ecMul(tweakValue, GX, GY, AA, PP);
+        (uint256 QX, uint256 QY) = LibEllipticCurve.ecAdd(PX, PY, TX, TY, AA, PP);
 
         return (QX, QY);
     }
@@ -129,7 +129,7 @@ library LibTaproot {
     }
 
     // function verifyTaprootScriptPubKeyWithNumsTweak(bytes32 spk, bytes calldata script, bytes32[] calldata merkleProof, uint256 tweakValue) public pure returns (bool) {
-    //     (uint tGX, uint tGY) = EllipticCurve.ecMul(tweakValue, GX, GY, AA, PP);
+    //     (uint tGX, uint tGY) = LibEllipticCurve.ecMul(tweakValue, GX, GY, AA, PP);
 
     //     return verifyTaprootScriptPubKey(spk, script, merkleProof, tGX, tGY);
     // }
@@ -148,7 +148,7 @@ library LibTaproot {
 
         require(tweakValue < OO, "Taproot: tweak should be within the curve order");
 
-        uint256 PY = EllipticCurve.deriveY(0x02, PX, AA, BB, PP);
+        uint256 PY = LibEllipticCurve.deriveY(0x02, PX, AA, BB, PP);
         (uint256 QX,) = tweak(PX, PY, tweakValue);
 
         //check for parity as well
