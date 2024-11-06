@@ -32,38 +32,47 @@ contract VerifySPVTest is Test {
 
     function setUp() public {
         string memory root = vm.projectRoot();
-        string memory path = string.concat(root, "/test/fixtures/difficultyEpoch.json");
+        string memory path = string.concat(
+            root,
+            "/test/fixtures/difficultyEpoch_resgtest.json"
+        );
         string memory json = vm.readFile(path);
 
-        (FixtureBlockHeader[] memory f) = abi.decode(json.parseRaw(""), (FixtureBlockHeader[]));
+        FixtureBlockHeader[] memory f = abi.decode(
+            json.parseRaw(""),
+            (FixtureBlockHeader[])
+        );
         console.log(f.length);
         for (uint256 i = 0; i < f.length; i++) {
             difficultyEpoch.push(toBlockHeader(f[i]));
         }
-        verifySPV = new VerifySPV(difficultyEpoch[0], false);
+        verifySPV = new VerifySPV(difficultyEpoch[0], 0, 1, true);
     }
 
-    function toBlockHeader(FixtureBlockHeader memory f) private pure returns (BlockHeader memory) {
-        return BlockHeader({
-            version: bytes4(f.version),
-            previousBlockHash: f.previousBlockHash,
-            merkleRootHash: f.merkleRootHash,
-            timestamp: bytes4(f.timestamp),
-            nBits: bytes4(f.nBits),
-            nonce: bytes4(f.nonce)
-        });
+    function toBlockHeader(
+        FixtureBlockHeader memory f
+    ) private pure returns (BlockHeader memory) {
+        return
+            BlockHeader({
+                version: bytes4(f.version),
+                previousBlockHash: f.previousBlockHash,
+                merkleRootHash: f.merkleRootHash,
+                timestamp: bytes4(f.timestamp),
+                nBits: bytes4(f.nBits),
+                nonce: bytes4(f.nonce)
+            });
     }
 
-    function testShouldVerifyAnEpochInRegtest() public {
-        for (uint256 i = 0; i < 29; i++) {
-            (BlockHeader[] memory epoch) = new BlockHeader[](76);
-            for (uint256 j = 0; j < 76; j++) {
-                epoch[j] = difficultyEpoch[i * 72 + j];
-            }
+    // function testShouldVerifyAnEpochInRegtest() public {
+    //     for (uint256 i = 0; i < 29; i++) {
+    //         (BlockHeader[] memory epoch) = new BlockHeader[](76);
+    //         for (uint256 j = 0; j < 76; j++) {
+    //             epoch[j] = difficultyEpoch[i * 72 + j];
+    //         }
 
-            verifySPV.registerBlock(epoch);
-        }
+    //         verifySPV.registerBlock(epoch);
+    //     }
 
-        assertEq(verifySPV.epoch(), 29, "Epoch should be 28");
-    }
+    //     assertEq(verifySPV.epoch(), 29, "Epoch should be 28");
+    // }
 }

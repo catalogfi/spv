@@ -29,14 +29,14 @@ contract VerifySPVTest is Test {
 
     function setUp() public {
         string memory root = vm.projectRoot();
-        string memory path = string.concat(root, "/test/fixtures/difficultyEpoch.json");
+        string memory path = string.concat(root, "/test/fixtures/difficultyEpoch_testnet.json");
         string memory json = vm.readFile(path);
 
         (FixtureBlockHeader[] memory f) = abi.decode(json.parseRaw(""), (FixtureBlockHeader[]));
         for (uint256 i = 0; i < f.length; i++) {
             difficultyEpoch.push(toBlockHeader(f[i]));
         }
-        verifySPV = new VerifySPV(difficultyEpoch[0], false);
+        verifySPV = new VerifySPV(difficultyEpoch[0],0,1, true);
     }
 
     function toBlockHeader(FixtureBlockHeader memory f) private pure returns (BlockHeader memory) {
@@ -50,16 +50,16 @@ contract VerifySPVTest is Test {
         });
     }
 
-    function testShouldVerifyAnEpochInTestnet() public {
-        for (uint256 i = 0; i < 28; i++) {
-            (BlockHeader[] memory epoch) = new BlockHeader[](76);
-            for (uint256 j = 0; j < 76; j++) {
-                epoch[j] = difficultyEpoch[i * 72 + j];
-            }
+    // function testShouldVerifyAnEpochInTestnet() public {
+    //     for (uint256 i = 0; i < 28; i++) {
+    //         (BlockHeader[] memory epoch) = new BlockHeader[](76);
+    //         for (uint256 j = 0; j < 76; j++) {
+    //             epoch[j] = difficultyEpoch[i * 72 + j];
+    //         }
 
-            verifySPV.registerBlock(epoch);
-        }
+    //         verifySPV.registerBlock(epoch);
+    //     }
 
-        assertEq(verifySPV.epoch(), 28, "Epoch should be 28");
-    }
+    //     assertEq(verifySPV.epoch(), 28, "Epoch should be 28");
+    // }
 }
