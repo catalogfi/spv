@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Utils} from "../Utils.sol";
@@ -63,7 +63,7 @@ library SPVLib {
             (
                 (abi.encodePacked(calculateBlockHash(header)))
                     .convertToBigEndian()
-            ).convertBytesToUint() <
+            ).bytesToUint256() <
             (abi.encodePacked(header.nBits)).convertnBitsToTarget();
     }
 
@@ -96,12 +96,12 @@ library SPVLib {
             abi
                 .encodePacked(header.timestamp)
                 .convertToBigEndian()
-                .convertBytesToUint()
+                .bytesToUint256()
         ).trySub(
                 abi
                     .encodePacked(LDETimestamp)
                     .convertToBigEndian()
-                    .convertBytesToUint()
+                    .bytesToUint256()
             );
 
         if (_elapsedTime < DIFFICULTY_EPOCH_PERIOD_DIV_4) {

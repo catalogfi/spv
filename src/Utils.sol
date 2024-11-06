@@ -4,21 +4,6 @@ pragma solidity ^0.8.20;
 import {BlockHeader, Prevout, Outpoint} from "./Types.sol";
 
 library Utils {
-    function convertBytesToUint(
-        bytes memory b
-    ) internal pure returns (uint256) {
-        uint256 number;
-        uint256 length = b.length;
-        require(length <= 32, "SPVLib: length cannot be greater than 32 bytes");
-        for (uint256 i = 0; i < length; i++) {
-            number =
-                number +
-                uint256(uint8(b[i])) *
-                (2 ** (8 * (length - (i + 1))));
-        }
-        return number;
-    }
-
     function convertToBigEndian(
         bytes memory bytesLE
     ) internal pure returns (bytes memory) {
@@ -33,7 +18,7 @@ library Utils {
     function convertnBitsToTarget(
         bytes memory nBitsBytes
     ) internal pure returns (uint256) {
-        uint256 nBits = convertBytesToUint(convertToBigEndian(nBitsBytes));
+        uint256 nBits = bytesToUint256((convertToBigEndian(nBitsBytes)));
         uint256 exp = uint256(nBits) >> 24;
         uint256 c = nBits & 0xffffff;
         uint256 target = uint256((c * 2 ** (8 * (exp - 3))));
@@ -122,13 +107,16 @@ library Utils {
         }
     }
 
-   function parseTx(
+    function parseTx(
         bytes calldata txHex
     ) public pure returns (bytes32, Prevout[] memory, Outpoint[] memory) {
         (uint256 offset, Prevout[] memory prevouts) = parsePrevouts(txHex, 6);
-        (uint256 outPointoffset, Outpoint[] memory outpoints) = parseOutpoints(txHex, offset);
+        (uint256 outPointoffset, Outpoint[] memory outpoints) = parseOutpoints(
+            txHex,
+            offset
+        );
         bytes32 txId = calculateTxId(txHex, outPointoffset);
-        
+
         return (txId, prevouts, outpoints);
     }
 
@@ -138,13 +126,16 @@ library Utils {
         uint256 startOffset
     ) public pure returns (uint256 offset, Prevout[] memory prevouts) {
         offset = startOffset;
-        
-        (uint8 bytesLength, bytes memory numInputs) = decodeVarint(txHex, offset);
+
+        (uint8 bytesLength, bytes memory numInputs) = decodeVarint(
+            txHex,
+            offset
+        );
         offset += bytesLength;
-        
+
         uint256 inputCount = bytesToUint256(numInputs);
         prevouts = new Prevout[](inputCount);
-        
+
         for (uint256 i = 0; i < inputCount; i++) {
             (offset, prevouts[i]) = parseSinglePrevout(txHex, offset);
         }
@@ -155,7 +146,9 @@ library Utils {
         bytes calldata txHex,
         uint256 offset
     ) public pure returns (uint256 newOffset, Prevout memory prevout) {
-        prevout.txid = bytes32(Utils.convertToBigEndian(txHex[offset:offset + 32]));
+        prevout.txid = bytes32(
+            Utils.convertToBigEndian(txHex[offset:offset + 32])
+        );
         prevout.vout = uint32(
             bytes4(Utils.convertToBigEndian(txHex[offset + 32:offset + 36]))
         );
@@ -168,10 +161,10 @@ library Utils {
         );
         offset += scriptSigLength;
         offset += bytesToUint256(scriptSigValue);
-        
+
         // Skip sequence
         offset += 4;
-        
+
         newOffset = offset;
     }
 
@@ -181,13 +174,16 @@ library Utils {
         uint256 startOffset
     ) public pure returns (uint256 offset, Outpoint[] memory outpoints) {
         offset = startOffset;
-        
-        (uint8 outputsLength, bytes memory numOutputs) = decodeVarint(txHex, offset);
+
+        (uint8 outputsLength, bytes memory numOutputs) = decodeVarint(
+            txHex,
+            offset
+        );
         offset += outputsLength;
-        
+
         uint256 outputCount = bytesToUint256(numOutputs);
         outpoints = new Outpoint[](outputCount);
-        
+
         for (uint256 i = 0; i < outputCount; i++) {
             (offset, outpoints[i]) = parseSingleOutpoint(txHex, offset);
         }
@@ -199,19 +195,20 @@ library Utils {
         uint256 offset
     ) public pure returns (uint256 newOffset, Outpoint memory outpoint) {
         outpoint.amount = uint32(
-            bytesToUint256(
-                convertToBigEndian(bytes(txHex[offset:offset + 8]))
-            )
+            bytesToUint256(convertToBigEndian(bytes(txHex[offset:offset + 8])))
         );
         offset += 8;
 
-        (uint8 spkByteLength, bytes memory spkLength) = decodeVarint(txHex, offset);
+        (uint8 spkByteLength, bytes memory spkLength) = decodeVarint(
+            txHex,
+            offset
+        );
         offset += spkByteLength;
-        
+
         uint256 spkLengthValue = bytesToUint256(spkLength);
         outpoint.spk = txHex[offset:offset + spkLengthValue];
         offset += spkLengthValue;
-        
+
         newOffset = offset;
     }
 
@@ -225,11 +222,11 @@ library Utils {
             txHex[6:offset],
             txHex[txHex.length - 4:]
         );
-        
+
         bytes memory txIdInNaturalByteOrder = abi.encodePacked(
             sha256(abi.encodePacked(sha256(txWithoutWitness)))
         );
-        
+
         return bytes32(convertToBigEndian(txIdInNaturalByteOrder));
     }
 }

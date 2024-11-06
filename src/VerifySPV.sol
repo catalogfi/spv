@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity ^0.8.20;
 
 import {IVerifySPV} from "./interfaces/IVerifySPV.sol";
 import {BlockHeader, SPVLib} from "./libraries/SPVLib.sol";
@@ -250,6 +250,10 @@ contract VerifySPV is IVerifySPV {
     // @dev plus the minimum confidence used to consider the latest block as confirmed
     // @param blockHash - Hash of the block
     function confidenceByHash(bytes32 blockHash) public view returns (uint256) {
+        require(
+            blockHeaders[blockHash].height != 0,
+            "VerifySPV: block not registered"
+        );
         return
             blockHeaders[LatestBlockHash].confidence +
             (blockHeaders[LatestBlockHash].height -
