@@ -2,7 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {IVerifySPV} from "./interfaces/IVerifySPV.sol";
-import {BlockHeader, Prevout, Outpoint, SPVLib} from "./libraries/LibSPV.sol";
+import {LibSPV} from "./libraries/LibSPV.sol";
+import {BlockHeader, Prevout, Outpoint, LibBitcoin} from "./libraries/LibBitcoin.sol";
 
 struct BlockRecord {
     BlockHeader header;
@@ -11,8 +12,8 @@ struct BlockRecord {
 }
 
 contract VerifySPV is IVerifySPV {
-    using SPVLib for BlockHeader;
-    using Utils for bytes;
+    using LibSPV for BlockHeader;
+    using LibBitcoin for bytes;
 
     mapping(bytes32 => BlockRecord) public blockHeaders;
     // reverse mapping for block number to block hashes
@@ -303,7 +304,7 @@ contract VerifySPV is IVerifySPV {
                 abi.encodePacked((blockSequence[epochDivider].nBits))
             ).convertnBitsToTarget();
             require(
-                SPVLib.verifyDifficultyEpochTarget(adjustedTarget, newTarget),
+                LibSPV.verifyDifficultyEpochTarget(adjustedTarget, newTarget),
                 "VerifySPV: adjusted difficulty is not in allowed range"
             );
             require(

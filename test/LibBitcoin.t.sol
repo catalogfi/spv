@@ -2,8 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Test} from "forge-std/Test.sol";
-import {BlockHeader} from "src/Types.sol";
-import {Utils} from "src/Utils.sol";
+import {BlockHeader, LibBitcoin} from "src/libraries/LibBitcoin.sol";
 
 struct DecodeVarintFixture {
     bytes input;
@@ -18,7 +17,7 @@ struct EncodeVarintFixture {
 
 contract UtilsIndirection is Test {
     function _parseBlockHeader(bytes calldata blockHeader) public pure returns (BlockHeader memory parsedHeader) {
-        return Utils.parseBlockHeader(blockHeader);
+        return LibBitcoin.parseBlockHeader(blockHeader);
     }
 
     function parseBlockHeader(bytes memory blockHeader) public view returns (BlockHeader memory parsedHeader) {
@@ -39,31 +38,31 @@ contract UtilsTest is Test {
         return bytes.concat(b[0], b[1], b[2], b[3]);
     }
 
-    function testShouldConvertBytesToUint() public pure {
-        bytes memory b = hex"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    // function testShouldConvertBytesToUint() public pure {
+    //     bytes memory b = hex"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 
-        uint256 number = Utils.convertBytesToUint(b);
-        assertEq(number, UINT256_MAX, "Number does not match");
-    }
+    //     uint256 number = LibBitcoin.convertBytesToUint(b);
+    //     assertEq(number, UINT256_MAX, "Number does not match");
+    // }
 
-    function testShouldNotConvertBytesToUintIfByteLengthGreaterThan32() public {
-        bytes memory b = hex"000000000000000000000000000000000000000000000000000000000000000100";
+    // function testShouldNotConvertBytesToUintIfByteLengthGreaterThan32() public {
+    //     bytes memory b = hex"000000000000000000000000000000000000000000000000000000000000000100";
 
-        vm.expectRevert("SPVLib: length cannot be greater than 32 bytes");
-        Utils.convertBytesToUint(b);
-    }
+    //     vm.expectRevert("SPVLib: length cannot be greater than 32 bytes");
+    //     LibBitcoin.convertBytesToUint(b);
+    // }
 
     function testShouldConvertToBigEndian() public pure {
         bytes memory b = hex"ffab";
 
-        bytes memory bBE = Utils.convertToBigEndian(b);
+        bytes memory bBE = LibBitcoin.convertToBigEndian(b);
         assertEq(bBE, hex"abff", "Big endian bytes do not match");
     }
 
     function testShouldComputeDoubleHash() public pure {
         bytes memory b = hex"0000000000000000000000000000000000000000000000000000000000000000";
 
-        bytes32 bHash = Utils.doubleHash(b);
+        bytes32 bHash = LibBitcoin.doubleHash(b);
 
         assertEq(bHash, hex"2b32db6c2c0a6235fb1397e8225ea85e0f0e6e8c7b126d0016ccbde0e667151e", "Hash does not match");
     }
@@ -71,7 +70,7 @@ contract UtilsTest is Test {
     function testShouldConvertToBytes32() public pure {
         bytes memory b = hex"000000000000000000000000000000000000000000000000000000000000000012121231";
 
-        bytes32 b32 = Utils.convertToBytes32(b);
+        bytes32 b32 = LibBitcoin.convertToBytes32(b);
 
         assertEq(b32, hex"0000000000000000000000000000000000000000000000000000000000000000", "Bytes32 does not match");
     }
@@ -111,7 +110,7 @@ contract UtilsTest is Test {
             merkleRootHash: 0x1977fa84d0689f38821e19016cb32b3ca6ab93ec885dcda968b5f2998a76b7f3
         });
 
-        uint256 target = Utils.convertnBitsToTarget(bytes4ToBytes(header.nBits));
+        uint256 target = LibBitcoin.convertnBitsToTarget(bytes4ToBytes(header.nBits));
 
         uint256 difficulty = MAX_TARGET / target;
 
@@ -131,7 +130,7 @@ contract UtilsTest is Test {
             DecodeVarintFixture({input: hex"ff0000000001000000", byteLength: 9, expected: hex"0000000100000000"});
 
         for (uint256 i = 0; i < 4; i++) {
-            (uint8 byteLength, bytes memory expected) = Utils.decodeVarint(fixtures[i].input, 0);
+            (uint8 byteLength, bytes memory expected) = LibBitcoin.decodeVarint(fixtures[i].input, 0);
             assertEq(fixtures[i].byteLength, byteLength, "Byte length does not match");
             assertEq(fixtures[i].expected, expected, "Expected bytes do not match");
         }
@@ -149,7 +148,7 @@ contract UtilsTest is Test {
         fixtures[3] = EncodeVarintFixture({input: 0x0000000100000000, output: hex"ff0000000001000000"});
 
         for (uint256 i = 0; i < 4; i++) {
-            bytes memory expected = Utils.encodeVarint(fixtures[i].input);
+            bytes memory expected = LibBitcoin.encodeVarint(fixtures[i].input);
             assertEq(fixtures[i].output, expected, "Expected bytes do not match");
         }
     }

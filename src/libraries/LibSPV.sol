@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {LibBitcoin, BlockHeader} from "./LibBitcoin.sol";
 
-library SPVLib {
+library LibSPV {
     using Math for uint256;
     using LibBitcoin for bytes;
 

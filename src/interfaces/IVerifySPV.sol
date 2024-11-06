@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.20;
 
-import {BlockHeader} from "../libraries/SPVLib.sol";
+import {BlockHeader} from "../libraries/LibSPV.sol";
 
 interface IVerifySPV {
     function registerLatestBlock(

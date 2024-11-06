@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {SPVLib} from "src/libraries/SPVLib.sol";
-import {Utils} from "src/Utils.sol";
-import {BlockHeader} from "src/Types.sol";
+import {LibSPV} from "src/libraries/LibSPV.sol";
+import {BlockHeader, LibBitcoin} from "src/libraries/LibBitcoin.sol";
 import {Test} from "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -16,7 +15,7 @@ struct VerifyTx {
 
 contract SPVLibIndirection is Test {
     function _verifyWork(BlockHeader calldata header) public pure returns (bool) {
-        return SPVLib.verifyWork(header);
+        return LibSPV.verifyWork(header);
     }
 
     function verifyWork(BlockHeader memory header) public view returns (bool) {
@@ -28,7 +27,7 @@ contract SPVLibIndirection is Test {
         pure
         returns (uint256)
     {
-        return SPVLib.calculateNewTarget(header, LDEtarget, LDETimestamp);
+        return LibSPV.calculateNewTarget(header, LDEtarget, LDETimestamp);
     }
 
     function calculateNewTarget(BlockHeader memory header, uint256 LDEtarget, bytes4 LDETimestamp)
@@ -64,7 +63,7 @@ contract SPVLibTestTest is Test {
             merkleRootHash: 0x78ce8a1195d00b58c530046ec369868aa4cc856bf139ef2636192ced886ed412
         });
 
-        bytes32 blockHash = SPVLib.calculateBlockHash(header);
+        bytes32 blockHash = LibSPV.calculateBlockHash(header);
 
         assertEq(
             0xaea988eb825ea493f3ae97679b674311f50922adcbd201000000000000000000, blockHash, "Block hash does not match"
@@ -90,7 +89,7 @@ contract SPVLibTestTest is Test {
 
         for (uint256 i = 0; i < txs.length; i++) {
             assertEq(
-                SPVLib.verifyProof(header, txs[i].txHash, txs[i].pos, txs[i].merkle),
+                LibSPV.verifyProof(header, txs[i].txHash, txs[i].pos, txs[i].merkle),
                 true,
                 string.concat("Failed to verify proof for tx", Strings.toString(i))
             );
@@ -123,7 +122,7 @@ contract SPVLibTestTest is Test {
             merkleRootHash: 0x78ce8a1195d00b58c530046ec369868aa4cc856bf139ef2636192ced886ed412
         });
 
-        uint256 oldTarget = Utils.convertnBitsToTarget(bytes4ToBytes(oldHeader.nBits));
+        uint256 oldTarget = LibBitcoin.convertnBitsToTarget(bytes4ToBytes(oldHeader.nBits));
 
         BlockHeader memory newHeader = BlockHeader({
             version: 0x00e0ff27,
@@ -135,10 +134,10 @@ contract SPVLibTestTest is Test {
         });
 
         uint256 actualNewTarget = spvLibIndirection.calculateNewTarget(newHeader, oldTarget, oldHeader.timestamp);
-        uint256 expectedNewTarget = Utils.convertnBitsToTarget(bytes4ToBytes(newHeader.nBits));
+        uint256 expectedNewTarget = LibBitcoin.convertnBitsToTarget(bytes4ToBytes(newHeader.nBits));
 
         assertEq(
-            SPVLib.verifyDifficultyEpochTarget(expectedNewTarget, actualNewTarget), true, "New target does not match"
+            LibSPV.verifyDifficultyEpochTarget(expectedNewTarget, actualNewTarget), true, "New target does not match"
         );
     }
 }

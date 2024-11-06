@@ -2,9 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {Utils} from "src/Utils.sol";
-import {SPVLib} from "src/libraries/SPVLib.sol";
-import {BlockHeader} from "src/Types.sol";
+import {LibBitcoin, BlockHeader} from "src/libraries/LibBitcoin.sol";
+import {LibSPV} from "src/libraries/LibSPV.sol";
 import {VerifySPV} from "src/VerifySPV.sol";
 import {Test} from "forge-std/Test.sol";
 
@@ -24,7 +23,7 @@ struct FixtureBlockHeader {
 contract VerifySPVTest is Test {
     using stdJson for string;
     using Math for uint256;
-    using SPVLib for BlockHeader;
+    using LibSPV for BlockHeader;
 
     BlockHeader[] difficultyEpoch;
     VerifySPV verifySPV;
