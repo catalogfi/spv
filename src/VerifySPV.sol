@@ -172,13 +172,14 @@ contract VerifySPV is IVerifySPV {
     // @param txIndex - Index of the transaction in the block
     // @param txHash - Transaction hash to be verified
     // @param proof - Array of merkle proof hashes
+    // @return confirmations - Uint256 indicating the number of confirmations of the block 
     function verifyTxInclusion(
         BlockHeader[] calldata blockSequence,
         uint256 blockIndex,
         uint256 txIndex,
         bytes32 txHash,
         bytes32[] memory proof
-    ) public view returns (bool) {
+    ) public view returns (uint256) {
         require(
             blockIndex < blockSequence.length,
             "VerifySPV: invalid block index"
@@ -203,7 +204,10 @@ contract VerifySPV is IVerifySPV {
             blockIndex
         );
 
-        return blockSequence[blockIndex].verifyProof(txHash, txIndex, proof);
+        uint256 prevBlockConfidence = confidenceByHash(blockSequence[blockIndex].previousBlockHash);
+        require(prevBlockConfidence != 0, "VerifySPV: unconfirmed or unrelayed block");
+        require(blockSequence[blockIndex].verifyProof(txHash, txIndex, proof), "VerifySPV: invalid tx inculsion proof");
+        return prevBlockConfidence-1;
     }
 
     // @dev Parse and verify the inclusion of a transaction in a block
@@ -212,7 +216,7 @@ contract VerifySPV is IVerifySPV {
     // @param blockIndex - Index of the desired block in the blockSequence
     // @param txIndex - Index of the transaction in the block
     // @param proof - Array of merkle proof hashes
-    // @return success - Boolean indicating the success of the verification
+    // @return confirmations - Uint256 indicating the number of confirmations of the block 
     // @return txHash - Hash of the transaction
     // @return prevOuts - Array of previous outputs of inputs in the transaction
     // @return outPoints - Array of outputs of the transaction
@@ -222,7 +226,7 @@ contract VerifySPV is IVerifySPV {
         uint256 blockIndex,
         uint256 txIndex,
         bytes32[] memory proof
-    ) public view returns (bool, bytes32, Prevout[] memory, Outpoint[] memory) {
+    ) public view returns (uint256, bytes32, Prevout[] memory, Outpoint[] memory) {
         (
             bytes32 txHash,
             Prevout[] memory prevOuts,
