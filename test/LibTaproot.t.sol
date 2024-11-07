@@ -279,14 +279,27 @@ contract TaprootTest is Test {
         LibTaproot.verifySchnorr(1, PX, signature, messageHash);
     }
 
-    function testShouldProduceBabylonScript() public pure{
+    function testShouldProduceBabylonScript() public pure {
         BabylonScriptUtils.PublicKey memory userKey = BabylonScriptUtils
             .PublicKey(
-                0x21ef19b8f9258d0b012d16112b2f4741d37f0da7c14a048b7c4209439b40c1ad,
+                0x4000bd2c8b975d351c5f3a42618aca31e07e2b253fcd571e9630540a3cb6eafd,
                 bytes32(
                     LibEllipticCurve.deriveY(
                         0x02,
-                        0x21ef19b8f9258d0b012d16112b2f4741d37f0da7c14a048b7c4209439b40c1ad,
+                        0x4000bd2c8b975d351c5f3a42618aca31e07e2b253fcd571e9630540a3cb6eafd,
+                        LibTaproot.AA,
+                        LibTaproot.BB,
+                        LibTaproot.PP
+                    )
+                )
+            );
+        BabylonScriptUtils.PublicKey memory fpKey = BabylonScriptUtils
+            .PublicKey(
+                0x46542ccdcbde8a8c147c8d00f14d47f0d5c13c684d27497fc4610c7a4def15e5,
+                bytes32(
+                    LibEllipticCurve.deriveY(
+                        0x02,
+                        0x46542ccdcbde8a8c147c8d00f14d47f0d5c13c684d27497fc4610c7a4def15e5,
                         LibTaproot.AA,
                         LibTaproot.BB,
                         LibTaproot.PP
@@ -296,15 +309,28 @@ contract TaprootTest is Test {
 
         BabylonScriptUtils.PublicKey[]
             memory fpKeys = new BabylonScriptUtils.PublicKey[](1);
-        fpKeys[0] = userKey;
+        fpKeys[0] = fpKey;
+
+        BabylonScriptUtils.PublicKey memory cKey = BabylonScriptUtils.PublicKey(
+            0x4852a5d3e79cfdee1bda4ea729e879c1db0f19230eadd3cb96d3cb1efa8d30fa,
+            bytes32(
+                LibEllipticCurve.deriveY(
+                    0x02,
+                    0x4852a5d3e79cfdee1bda4ea729e879c1db0f19230eadd3cb96d3cb1efa8d30fa,
+                    LibTaproot.AA,
+                    LibTaproot.BB,
+                    LibTaproot.PP
+                )
+            )
+        );
 
         BabylonScriptUtils.PublicKey[]
             memory cKeys = new BabylonScriptUtils.PublicKey[](1);
-        cKeys[0] = userKey;
+        cKeys[0] = cKey;
 
         BabylonScriptUtils.BabylonScriptPaths
             memory pathscripts = BabylonScriptUtils.buildBabylonScriptPaths(
-                BabylonScriptUtils.ScriptParams(userKey, fpKeys, cKeys, 1, 100)
+                BabylonScriptUtils.ScriptParams(userKey, fpKeys, cKeys, 1, 1000)
             );
 
         bytes[] memory scripts = new bytes[](3);
@@ -314,9 +340,14 @@ contract TaprootTest is Test {
 
         bytes32 pkey = LibTaproot.getTaprootScriptPubKey(
             scripts,
-            0x21ef19b8f9258d0b012d16112b2f4741d37f0da7c14a048b7c4209439b40c1ad
+            0x50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0
         );
 
-        console.logBytes32(pkey);
+        // todo: should fix this test
+        assertEq(
+            pkey,
+            0xb2b169d39fb8ea9828f6ed8dbbeaa12594706d03bfd1638a912608a085fdd7a5,
+            "taproot script pub keys do not match"
+        );
     }
 }
