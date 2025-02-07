@@ -68,3 +68,42 @@ interface IVerifySPV {
     // @param blockHash - Hash of the block
     function confidenceByHash(bytes32 blockHash) external view returns (uint256);
 }
+
+interface ISPV {
+    function registerCallback(bytes calldata spk, address callback, uint256 reward) external payable;
+}
+
+contract SPVCallback {    
+    ISPV spv;
+    constructor(address _spv, bytes memory _spk, uint256 _rewardsPerCall) {
+        spv = ISPV(_spv);
+        spv.registerCallback(_spk, address(this), _rewardsPerCall);
+    }
+
+    modifier onlySPV() {
+        require(msg.sender == address(spv), "SPVCallback: caller is not SPV");
+        _;
+    }
+
+    /**
+     * @notice Called when a Bitcoin deposit is processed
+     * @param txHash The Bitcoin transaction hash
+     * @param index The index of the output being processed
+     * @param amount The amount of BTC in satoshis
+     */
+    function onCreate(
+        bytes32 txHash,
+        uint256 index,
+        uint256 amount
+    ) onlySPV external virtual {}
+
+    /**
+     * @notice Called when a Bitcoin deposit is processed
+     * @param txHash The Bitcoin transaction hash
+     * @param index The index of the input being processed
+     */
+    function onSpend(
+        bytes32 txHash,
+        uint256 index
+    ) onlySPV external virtual {}
+}

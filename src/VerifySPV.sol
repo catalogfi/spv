@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {IVerifySPV} from "./interfaces/IVerifySPV.sol";
+import {IVerifySPV, ISPV, SPVCallback} from "./interfaces/IVerifySPV.sol";
 import {LibSPV} from "./libraries/LibSPV.sol";
 import {BlockHeader, Prevout, Outpoint, LibBitcoin} from "./libraries/LibBitcoin.sol";
+import {Bytes} from "@openzeppelin/contracts/utils/Bytes.sol";
 
 struct BlockRecord {
     BlockHeader header;
@@ -349,4 +350,167 @@ contract VerifySPV is IVerifySPV {
 
         return true;
     }
+
+    enum BTCAddressType {
+        P2PKH,      // Pay to Public Key Hash
+        P2SH,       // Pay to Script Hash
+        P2WPKH,     // Pay to Witness Public Key Hash
+        P2WSH,      // Pay to Witness Script Hash
+        P2TR        // Pay to Taproot
+    }
+
+    struct Callback {
+        BTCAddressType addrType;
+        SPVCallback callback;
+        uint256 rewardPerCall;
+
+        uint256 balance;
+    }
+
+    // Mapping to track if a bitcoin UTXO has been used
+    mapping(bytes32 => bytes32) public deposits;
+
+    // Mapping to track if a bitcoin UTXO has been used
+    mapping(bytes32 => bytes32) public withdrawals;
+
+    // Mapping from pubkeyhash to callback address
+    mapping(bytes32 => Callback) public callbacks;
+
+    event UTXOProcessed(bytes32 indexed txHash, uint256 indexed outputIndex, bytes32 indexed pubkeyHash, BTCAddressType addrType, uint256 amount);
+
+    /**
+     * @notice Registers a callback for when a Bitcoin transaction is processed
+     * @param callback The address to call when a transaction is processed
+     */
+    function registerCallback(bytes calldata spk, SPVCallback callback, uint256 reward) external payable {
+        (BTCAddressType addrType, bytes32 pubKeyHash) = extractFromScriptPubKey(spk);
+        require(address(callbacks[pubKeyHash].callback) == address(0), "Callback already registered");
+        callbacks[pubKeyHash] = Callback({
+            addrType: addrType,
+            rewardPerCall: reward,
+            callback: callback,
+            balance: msg.value
+        });
+    }
+
+    /**
+     * @notice Funds a callback to pay for rewards
+     * @param pubKeyHash The Bitcoin public key hash associated with the callback
+     */
+    function fundCallback(bytes32 pubKeyHash) external payable {
+        require(address(callbacks[pubKeyHash].callback) != address(0), "Callback not registered");
+        
+        callbacks[pubKeyHash].balance += msg.value;
+    }
+
+    /**
+     * @notice Allows a user to borrow funds by proving they control an approved Bitcoin address
+     * @param blockSequence Array of block headers containing the funding tx
+     * @param txHex Raw Bitcoin transaction bytes
+     * @param blockIndex Index of block containing tx in sequence
+     * @param txIndex Index of tx in block
+     * @param proof Merkle proof of tx inclusion
+     */
+    function submitTransaction(
+        BlockHeader[] calldata blockSequence,
+        bytes calldata txHex,
+        uint256 blockIndex, 
+        uint256 txIndex,
+        uint256[] calldata ipIndexes,
+        uint256[] calldata opIndexes,
+        bytes32[] memory proof
+    ) external {
+        // Verify the Bitcoin transaction
+        (uint256 confirmations, bytes32 txHash, Prevout[] memory prevOuts, Outpoint[] memory outPoints) = 
+            parseAndVerifyTxInclusion(
+                blockSequence,
+                txHex,
+                blockIndex,
+                txIndex,
+                proof
+            );
+
+        require(confirmations >= 6, "Insufficient confirmations");
+
+        if (opIndexes.length > 0) {
+            for (uint256 i = 0; i < opIndexes.length; i++) {
+                uint256 opIndex = opIndexes[i];
+                require(opIndex < outPoints.length, "Output index out of bounds");
+
+                require(deposits[keccak256(abi.encodePacked(txHash, opIndex))] == bytes32(0x0), "UTXO already used");
+
+                // Extract the recipient Bitcoin address from output
+                // Assuming P2PKH output format
+                require(outPoints.length > 0, "No outputs found");
+
+                Outpoint memory op = outPoints[opIndex];
+                (BTCAddressType addrType, bytes32 pubKeyHash) = extractFromScriptPubKey(op.spk);
+
+                // Call registered callback if one exists
+                Callback storage callback = callbacks[pubKeyHash];
+                if (address(callback.callback) != address(0) && addrType == callback.addrType) {
+                    callback.callback.onCreate(txHash, opIndex, op.amount);
+                }
+
+                // Mark UTXO as used
+                deposits[keccak256(abi.encodePacked(txHash, opIndex))] = pubKeyHash;
+
+                emit UTXOProcessed(txHash, opIndex, pubKeyHash, addrType, op.amount);
+            }
+        }
+
+        if (ipIndexes.length > 0) {
+            for (uint256 i = 0; i < ipIndexes.length; i++) {
+                uint256 ipIndex = ipIndexes[i];
+                require(ipIndex < prevOuts.length, "Input index out of bounds");
+                Prevout memory prevout = prevOuts[ipIndex];
+
+                bytes32 dpkh = deposits[keccak256(abi.encodePacked(prevout.txid, prevout.vout))];
+                require(dpkh != bytes32(0x0), "UTXO has not been registered");
+
+                // Call registered callback if one exists
+                Callback storage callback = callbacks[dpkh];
+                if (address(callback.callback) != address(0)) {
+                    callback.callback.onSpend(prevout.txid, prevout.vout);
+                }
+            }
+        }
+    }
+
+
+    /**
+     * @notice Extracts the type and pubkeyhash from a Bitcoin scriptPubKey
+     * @param spk The scriptPubKey bytes
+     * @return addrType The type of Bitcoin address
+     * @return pubkeyHash The extracted pubkeyhash/scripthash
+     */
+    function extractFromScriptPubKey(bytes memory spk) public pure returns (BTCAddressType addrType, bytes32 pubkeyHash) {
+        // P2PKH: OP_DUP OP_HASH160 <20 bytes> OP_EQUALVERIFY OP_CHECKSIG
+        if (spk.length == 25 && spk[0] == 0x76 && spk[1] == 0xa9 && spk[2] == 0x14 && spk[23] == 0x88 && spk[24] == 0xac) {
+            return (BTCAddressType.P2PKH, bytes32(Bytes.slice(spk, 3, 23)));
+        }
+        
+        // P2SH: OP_HASH160 <20 bytes> OP_EQUAL
+        if (spk.length == 23 && spk[0] == 0xa9 && spk[1] == 0x14 && spk[22] == 0x87) {
+            return (BTCAddressType.P2SH, bytes32(Bytes.slice(spk, 2, 22)));
+        }
+
+        // P2WPKH: OP_0 <20 bytes>
+        if (spk.length == 22 && spk[0] == 0x00 && spk[1] == 0x14) {
+            return (BTCAddressType.P2WPKH,  bytes32(Bytes.slice(spk, 2)));
+        }
+
+        // P2WSH: OP_0 <32 bytes>
+        if (spk.length == 34 && spk[0] == 0x00 && spk[1] == 0x20) {
+            return (BTCAddressType.P2WSH,  bytes32(Bytes.slice(spk, 2)));
+        }
+
+        // P2TR: OP_1 <32 bytes>
+        if (spk.length == 34 && spk[0] == 0x01 && spk[1] == 0x20) {
+            return (BTCAddressType.P2TR,  bytes32(Bytes.slice(spk, 2)));
+        }
+
+        revert("SPV: unsupported scriptPubKey");
+    }
 }
+
