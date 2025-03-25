@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.20;
+pragma solidity 0.8.27;
 
 import {BlockHeader} from "../libraries/LibSPV.sol";
 import {Prevout, Outpoint} from "../libraries/LibBitcoin.sol";
@@ -13,10 +13,7 @@ interface IVerifySPV {
     // @notice The newEpoch array should not contain more than 2016 blocks
     // @notice The starting block of the newEpoch should be the latest block hash
     // @notice To register a new block from new difficulty epoch, the first block of the newEpoch should be registered first
-    function registerLatestBlock(
-        BlockHeader[] calldata newEpoch,
-        uint256 blockIndex
-    ) external;
+    function registerLatestBlock(BlockHeader[] calldata newEpoch, uint256 blockIndex) external;
 
     // @dev Register a block between two blocks already on the chain
     // @param blockSequence - Array of block headers for the new epoch
@@ -24,10 +21,7 @@ interface IVerifySPV {
     // @notice The intended block should be between the first and last block of the blockSequence
     // @notice This can be used to optimize the gas cost of verify function if demand for number of
     // @notice tx inclusion proofs are higer between two already registered blocks which are undesirably far in height.
-    function registerInclusiveBlock(
-        BlockHeader[] calldata blockSequence,
-        uint256 blockIndex
-    ) external;
+    function registerInclusiveBlock(BlockHeader[] calldata blockSequence, uint256 blockIndex) external;
 
     // @dev Verify the inclusion of a transaction in a block
     // @param blockSequence - Array of block headers between two blocks already on the chain
@@ -35,7 +29,7 @@ interface IVerifySPV {
     // @param txIndex - Index of the transaction in the block
     // @param txHash - Transaction hash to be verified
     // @param proof - Array of merkle proof hashes
-    // @return confirmations - Uint256 indicating the number of confirmations of the block 
+    // @return confirmations - Uint256 indicating the number of confirmations of the block
     function verifyTxInclusion(
         BlockHeader[] calldata blockSequence,
         uint256 blockIndex,
@@ -50,7 +44,7 @@ interface IVerifySPV {
     // @param blockIndex - Index of the desired block in the blockSequence
     // @param txIndex - Index of the transaction in the block
     // @param proof - Array of merkle proof hashes
-    // @return confirmations - Uint256 indicating the number of confirmations of the block 
+    // @return confirmations - Uint256 indicating the number of confirmations of the block
     // @return txHash - Hash of the transaction
     // @return prevOuts - Array of previous outputs of inputs in the transaction
     // @return outPoints - Array of outputs of the transaction
@@ -73,8 +67,9 @@ interface ISPV {
     function registerCallback(bytes calldata spk, address callback, uint256 reward) external payable;
 }
 
-contract SPVCallback {    
+contract SPVCallback {
     ISPV spv;
+
     constructor(address _spv, bytes memory _spk, uint256 _rewardsPerCall) {
         spv = ISPV(_spv);
         spv.registerCallback(_spk, address(this), _rewardsPerCall);
@@ -91,19 +86,12 @@ contract SPVCallback {
      * @param index The index of the output being processed
      * @param amount The amount of BTC in satoshis
      */
-    function onCreate(
-        bytes32 txHash,
-        uint256 index,
-        uint256 amount
-    ) onlySPV external virtual {}
+    function onCreate(bytes32 txHash, uint256 index, uint256 amount) external virtual onlySPV {}
 
     /**
      * @notice Called when a Bitcoin deposit is processed
      * @param txHash The Bitcoin transaction hash
      * @param index The index of the input being processed
      */
-    function onSpend(
-        bytes32 txHash,
-        uint256 index
-    ) onlySPV external virtual {}
+    function onSpend(bytes32 txHash, uint256 index) external virtual onlySPV {}
 }

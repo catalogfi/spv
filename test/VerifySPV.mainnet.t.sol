@@ -30,34 +30,25 @@ contract VerifySPVTest is Test {
 
     function setUp() public {
         string memory root = vm.projectRoot();
-        string memory path = string.concat(
-            root,
-            "/test/fixtures/difficultyEpoch.json"
-        );
+        string memory path = string.concat(root, "/test/fixtures/difficultyEpoch.json");
         string memory json = vm.readFile(path);
 
-        FixtureBlockHeader[] memory f = abi.decode(
-            json.parseRaw(""),
-            (FixtureBlockHeader[])
-        );
+        FixtureBlockHeader[] memory f = abi.decode(json.parseRaw(""), (FixtureBlockHeader[]));
         for (uint256 i = 0; i < f.length; i++) {
             difficultyEpoch.push(toBlockHeader(f[i]));
         }
         verifySPV = new VerifySPV(difficultyEpoch[0], 840672, 2, false);
     }
 
-    function toBlockHeader(
-        FixtureBlockHeader memory f
-    ) private pure returns (BlockHeader memory) {
-        return
-            BlockHeader({
-                version: bytes4(f.version),
-                previousBlockHash: f.previousBlockHash,
-                merkleRootHash: f.merkleRootHash,
-                timestamp: bytes4(f.timestamp),
-                nBits: bytes4(f.nBits),
-                nonce: bytes4(f.nonce)
-            });
+    function toBlockHeader(FixtureBlockHeader memory f) private pure returns (BlockHeader memory) {
+        return BlockHeader({
+            version: bytes4(f.version),
+            previousBlockHash: f.previousBlockHash,
+            merkleRootHash: f.merkleRootHash,
+            timestamp: bytes4(f.timestamp),
+            nBits: bytes4(f.nBits),
+            nonce: bytes4(f.nonce)
+        });
     }
 
     function testRegisterBlock() public {
@@ -67,14 +58,9 @@ contract VerifySPVTest is Test {
         }
 
         vm.expectEmit(true, false, false, false, address(verifySPV));
-        emit VerifySPV.BlockRegistered(
-            difficultyEpoch[72].calculateBlockHash(),
-            840744
-        );
+        emit VerifySPV.BlockRegistered(difficultyEpoch[72].calculateBlockHash(), 840744);
         verifySPV.registerLatestBlock(epoch, 72);
-        (, , uint256 height) = verifySPV.blockHeaders(
-            verifySPV.LatestBlockHash()
-        );
+        (,, uint256 height) = verifySPV.blockHeaders(verifySPV.LatestBlockHash());
         assertEq(height, 840744, "Height should be 840744");
     }
 

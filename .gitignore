@@ -16,3 +16,8 @@ docs/
 
 # Coverage
 lcov.info
+
+# backend test 
+backend_merry_test/target
+backend_merry_test/.env
+backend_merry_test/Cargo.lock

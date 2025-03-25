@@ -155,7 +155,6 @@ contract TaprootTest is Test {
         assertEq(isValidTaprootKey, true, "should verify taproot script pub key");
     }
 
-
     function pubkeyToAddress(bytes memory pubkey) internal pure returns (address) {
         bytes32 hash = keccak256(pubkey);
         return address(uint160(uint256(hash)));

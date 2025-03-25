@@ -1,18 +1,98 @@
 // SPDX-License-Identifier: UNLICENSED
+
 pragma solidity ^0.8.13;
 
-import {Script} from "forge-std/Script.sol";
+import {Script, console} from "forge-std/Script.sol";
 import {VerifySPV, BlockHeader, LibBitcoin} from "../src/VerifySPV.sol";
+import "forge-std/StdJson.sol";
+
+// contract SPVDeploy is Script {
+//     using stdJson for string;
+
+//     struct FixtureBlockHeader {
+//         bytes4 version;
+//         bytes32 previousblockhash;
+//         bytes32 merkleroot;
+//         bytes4 time;
+//         bytes4 bits;
+//         bytes4 nonce;
+//     }
+
+//     BlockHeader[] difficultyEpoch;
+
+//     function toBlockHeader(FixtureBlockHeader memory f) private pure returns (BlockHeader memory) {
+//         return BlockHeader({
+//             version: f.version,
+//             previousBlockHash: f.previousblockhash,
+//             merkleRootHash: f.merkleroot,
+//             timestamp: f.time,
+//             nBits: f.bits,
+//             nonce: f.nonce
+//         });
+//     }
+
+//     function run() public {
+//         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+//         vm.startBroadcast(deployerPrivateKey);
+
+//         string memory root = vm.projectRoot();
+//         string memory path = string.concat(root, "/script/blockheader.json");
+
+//         // Read JSON file
+//         string memory json = vm.readFile(path);
+//         console.log("JSON Contents: ", json); // Debugging line
+
+//         // Parse JSON from the string, NOT the path
+//         // bytes memory parsedJson = vm.parseJson(json, "");
+
+//         // Decode JSON into struct array
+//         (FixtureBlockHeader[] memory f) = abi.decode(json.parseRaw(""), (FixtureBlockHeader[]));
+//         console.log("f.length: ", f.length);
+
+//         for (uint256 i = 0; i < f.length; i++) {
+//             difficultyEpoch.push(toBlockHeader(f[i]));
+//         }
+
+//         new VerifySPV(toBlockHeader(f[0]), 1, 1, true);
+
+//         vm.stopBroadcast();
+//     }
+// }
 
 contract SPVDeploy is Script {
-    function run(bytes calldata _genesisHeader, uint256 _height, uint256 _minConfidence, bool _isTestnet) external {
+    using stdJson for string;
+
+    BlockHeader[] difficultyEpoch;
+
+    function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        // BlockHeader memory genesisHeader = LibBitcoin.parseBlockHeader(_genesisHeader);
-        BlockHeader memory genesisHeader = LibBitcoin.parseBlockHeader(_genesisHeader);
-        
-        VerifySPV spv = new VerifySPV(genesisHeader, _height, _minConfidence, _isTestnet);
+        string memory root = vm.projectRoot();
+        string memory path = string.concat(root, "/script/blockheader.json");
+        string memory json = vm.readFile(path);
+
+        // Parse fields individually with proper types
+        // uint256 length = stdJson.readUint(json, ".length");
+        uint256 length = 5;
+
+        for (uint256 i = 0; i < length; i++) {
+            string memory base = string.concat("[", vm.toString(i), "]");
+
+            BlockHeader memory header;
+            header.version = bytes4(stdJson.readBytes(json, string.concat(base, ".version")));
+            header.previousBlockHash = stdJson.readBytes32(json, string.concat(base, ".previousblockhash"));
+            header.merkleRootHash = stdJson.readBytes32(json, string.concat(base, ".merkleroot"));
+            header.timestamp = bytes4(stdJson.readBytes(json, string.concat(base, ".time")));
+            header.nBits = bytes4(stdJson.readBytes(json, string.concat(base, ".bits")));
+            header.nonce = bytes4(stdJson.readBytes(json, string.concat(base, ".nonce")));
+
+            difficultyEpoch.push(header);
+        }
+
+        console.log("Loaded %d block headers", difficultyEpoch.length);
+
+        new VerifySPV(difficultyEpoch[0], 0, 1, false);
 
         vm.stopBroadcast();
     }

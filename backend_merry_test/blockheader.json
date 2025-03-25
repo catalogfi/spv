@@ -1,0 +1,50 @@
+[
+  {
+    "version": "0x20000000",
+    "previousblockhash": "0x03eedf10f5cfa13f978bdcc35069e1956d4fce115d5357b064e87b6937df3b25",
+    "merkleroot": "0xa97f7d2ea982ea47fdf9302dfc5d0d564f7d84d2b51db658fb6b50dfb25690f6",
+    "time": "0x67ddb48c",
+    "bits": "0x207fffff",
+    "nonce": "0x0"
+  },
+  {
+    "version": "0x20000000",
+    "previousblockhash": "0x250665a806dd8cfe24333e43ea527ecfd8e9e9f4d4c1944ec6b32d73ed34d684",
+    "merkleroot": "0xa752faac344a146e2b32dc8c5d736c8fd65c0174da6f97633664634aa080378b",
+    "time": "0x67ddb48c",
+    "bits": "0x207fffff",
+    "nonce": "0x0"
+  },
+  {
+    "version": "0x20000000",
+    "previousblockhash": "0x610647cf30d1f9547504860b5397d1777cc255ffa6a1a28e346994d6d6b7e084",
+    "merkleroot": "0xf12c873972f157cd3357f20ed41452c39b3b45b026c7c0d88423d7a1dec44fb2",
+    "time": "0x67ddb48c",
+    "bits": "0x207fffff",
+    "nonce": "0x0"
+  },
+  {
+    "version": "0x20000000",
+    "previousblockhash": "0x18ab8e1a9bf1d5d0309783bc61b24a49786d8e46b5a07c60d44c06bb0729092a",
+    "merkleroot": "0xe712d67128efacc8ee018823c2f4f2947a512d8ff3f2b1b364347a785c5e49ca",
+    "time": "0x67ddc238",
+    "bits": "0x207fffff",
+    "nonce": "0x1"
+  },
+  {
+    "version": "0x20000000",
+    "previousblockhash": "0x03757eb8d3191a0fb453a73bdf6c04e59632b54369e6e16e72ec32df31c21608",
+    "merkleroot": "0xbd75f15a1d50647bd94c456a6e8280ea64c1c45d09336780d39ae3de71cd699b",
+    "time": "0x67de8bf4",
+    "bits": "0x207fffff",
+    "nonce": "0x1"
+  },
+  {
+    "version": "0x20000000",
+    "previousblockhash": "0x6c5562d61f7669122b90e896313d874b00459c0d27dde56a16b2439602fcb230",
+    "merkleroot": "0x2dcd7a2e8b178cbdf586aed11c6da8912318f01d8eef925d07ce7c8d41c18cde",
+    "time": "0x67df0517",
+    "bits": "0x207fffff",
+    "nonce": "0x0"
+  }
+]

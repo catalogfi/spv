@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.27;
 
 import {IVerifySPV, ISPV, SPVCallback} from "./interfaces/IVerifySPV.sol";
 import {LibSPV} from "./libraries/LibSPV.sol";
@@ -25,11 +25,34 @@ contract VerifySPV is IVerifySPV {
 
     bytes32 public LatestBlockHash;
 
-    uint256 public minimumConfidence;
+    // @audit changed it to immutable
+    uint256 public immutable minimumConfidence;
 
-    bool public isTestnet;
+    // @audit changed it to immutable
+    bool public immutable isTestnet;
 
     event BlockRegistered(bytes32 indexed blockHash, uint256 indexed height);
+
+    error VerifySPV__Constructor__GenesisBlockShouldBeAtTheStartOfADifficultyEpoch();
+    error VerifySPV__registerLatestBlock__InvalidBlockIndex();
+    error VerifySPV__registerLatestBlock__InvalidEpochShouldContainTheCurrentBlockAndAtleastMinConfidence();
+    error VerifySPV__registerLatestBlock__InvalidEpochShouldNotContainMoreThan2016Blocks();
+    error VerifySPV__registerLatestBlock__InvalidEpochStartingBlockShouldBeOnChain();
+    error VerifySPV__registerLatestBlock__InvalidEPochLastDifficultyEpochBlockShouldBeRegisteredBeforeFollowingBlocks();
+    error VerifySPV__registerLatestBlock__BlockAlreadyRegistered();
+    error VerifySPV__registerInclusiveBlock__InvalidEpochStartingBlockShouldBeOnChain();
+    error VerifySPV__registerInclusiveBlock__InvalidEpochEndingBlockNotOnChain();
+    error VerifySPV__registerInclusiveBlock__InvalidBlockIndex();
+    error VerifySPV__verifyTxInclusion__InvalidEpochStartingBlockNotOnChain();
+    error VerifySPV__verifyTxInclusion__InvalidEpochBlockIndex();
+    error VerifySPV__verifyTxInclusion__InvalidEpochEndingBlockNotOnChain();
+    error VerifySPV__verifyTxInclusion__UnconfirmedOrUnrelayedBlock();
+    error VerifySPV__verifyTxInclusion__InvalidTxInclusionProof();
+    error VerifySPV__confidenceByHash__BlockNotRegistered();
+    error VerifySPV__verifySequence__SequenceVerificationFailed();
+    error VerifySPV__verifySequence__AdjustedDifficultyNotInAllowedRange();
+    error VerifySPV__verifySequence__DifficultyEpochValidationFailed();
+    error VerifySPV__verifySequence__PostSubsequenceInDifficultyEpochFailed();
 
     // @dev Constructor to initialize the contract with the genesis block
     // @dev Genesis block here means the first block in the SPV system
@@ -38,25 +61,15 @@ contract VerifySPV is IVerifySPV {
     // @param _minimumConfidence - Minimum number of blocks required to consider the latest block as confirmed
     // @param _isTestnet - Boolean indicating if the chain is a testnet
     // @notice The genesis block should be at the start of a difficulty epoch => height % 2016 == 0
-    constructor(
-        BlockHeader memory genesisHeader,
-        uint256 height,
-        uint256 _minimumConfidence,
-        bool _isTestnet
-    ) {
+    constructor(BlockHeader memory genesisHeader, uint256 height, uint256 _minimumConfidence, bool _isTestnet) {
         require(
-            _isTestnet || height % 2016 == 0,
-            "VerifySPV: genesis block should be at the start of a difficulty epoch"
+            _isTestnet || height % 2016 == 0, VerifySPV__Constructor__GenesisBlockShouldBeAtTheStartOfADifficultyEpoch()
         );
         LDEBlockHash = genesisHeader.calculateBlockHash();
         LatestBlockHash = LDEBlockHash;
-        blockHeaders[LDEBlockHash] = BlockRecord({
-            header: genesisHeader,
-            confidence: 0,
-            height: height
-        });
+        blockHeaders[LDEBlockHash] = BlockRecord({header: genesisHeader, confidence: 0, height: height});
         blockHashes[height] = LDEBlockHash;
-        minimumConfidence = _minimumConfidence;
+        minimumConfidence = _minimumConfidence; // @audit if 144 what can happen??
         isTestnet = _isTestnet;
     }
 
@@ -68,52 +81,39 @@ contract VerifySPV is IVerifySPV {
     // @notice The newEpoch array should not contain more than 2016 blocks
     // @notice The starting block of the newEpoch should be the latest block hash
     // @notice To register a new block from new difficulty epoch, the first block of the newEpoch should be registered first
-    function registerLatestBlock(
-        BlockHeader[] calldata newEpoch,
-        uint256 blockIndex
-    ) public {
-        require(
-            blockIndex < newEpoch.length && blockIndex > 0,
-            "VerifySPV: invalid block index"
-        );
+    function registerLatestBlock(BlockHeader[] calldata newEpoch, uint256 blockIndex) external {
+        require(blockIndex < newEpoch.length && blockIndex > 0, VerifySPV__registerLatestBlock__InvalidBlockIndex());
         require(
             newEpoch.length >= blockIndex + minimumConfidence + 1,
-            "VerifySPV: invalid epoch, should contain the current block and atleast next block"
+            VerifySPV__registerLatestBlock__InvalidEpochShouldContainTheCurrentBlockAndAtleastMinConfidence()
         );
 
         require(
             newEpoch.length <= 2016 + minimumConfidence + 1,
-            "VerifySPV: invalid epoch, should not contain more than 2016 blocks"
+            VerifySPV__registerLatestBlock__InvalidEpochShouldNotContainMoreThan2016Blocks()
         );
 
         require(
             newEpoch[0].calculateBlockHash() == LatestBlockHash,
-            "VerifySPV: invalid epoch, starting block not on chain"
+            VerifySPV__registerLatestBlock__InvalidEpochStartingBlockShouldBeOnChain()
         );
 
         uint256 newHeight = blockHeaders[LatestBlockHash].height + blockIndex;
 
         require(
-            isTestnet ||
-                newHeight % 2016 == 0 ||
-                (newHeight % 2016 != 0 &&
-                    blockHashes[(newHeight / 2016) * 2016] == LDEBlockHash),
-            "VerifySPV: invalid epoch, last difficulty epoch block should be regostered before following blocks"
+            isTestnet || newHeight % 2016 == 0
+                || (newHeight % 2016 != 0 && blockHashes[(newHeight / 2016) * 2016] == LDEBlockHash),
+            VerifySPV__registerLatestBlock__InvalidEPochLastDifficultyEpochBlockShouldBeRegisteredBeforeFollowingBlocks(
+            )
         );
 
-        require(
-            blockHashes[newHeight] == bytes32(0x0),
-            "VerifySPV: block already registered"
-        );
+        require(blockHashes[newHeight] == bytes32(0x0), VerifySPV__registerLatestBlock__BlockAlreadyRegistered());
 
         verifySequence(newEpoch, newHeight, blockIndex);
 
         bytes32 newEpochBlockHash = newEpoch[blockIndex].calculateBlockHash();
-        blockHeaders[newEpochBlockHash] = BlockRecord({
-            header: newEpoch[blockIndex],
-            confidence: newEpoch.length - blockIndex - 1,
-            height: newHeight
-        });
+        blockHeaders[newEpochBlockHash] =
+            BlockRecord({header: newEpoch[blockIndex], confidence: newEpoch.length - blockIndex - 1, height: newHeight});
 
         LatestBlockHash = newEpochBlockHash;
 
@@ -132,39 +132,28 @@ contract VerifySPV is IVerifySPV {
     // @notice The intended block should be between the first and last block of the blockSequence
     // @notice This can be used to optimize the gas cost of verify function if demand for number of
     // @notice tx inclusion proofs are higer between two already registered blocks which are undesirably far in height.
-    function registerInclusiveBlock(
-        BlockHeader[] calldata blockSequence,
-        uint256 blockIndex
-    ) public {
-        require(
-            blockIndex < blockSequence.length,
-            "VerifySPV: invalid block index"
-        );
+    function registerInclusiveBlock(BlockHeader[] calldata blockSequence, uint256 blockIndex) external {
+        // @audit this should be blocksequence.length - 1 ?? just to have a early revert and save gas
+        require(blockIndex < blockSequence.length, VerifySPV__registerInclusiveBlock__InvalidBlockIndex());
 
         require(
             blockHeaders[blockSequence[0].calculateBlockHash()].height != 0,
-            "VerifySPV: invalid epoch, starting block not on chain"
+            VerifySPV__registerInclusiveBlock__InvalidEpochStartingBlockShouldBeOnChain()
         );
 
         require(
-            blockHeaders[
-                blockSequence[blockSequence.length - 1].calculateBlockHash()
-            ].height != 0,
-            "VerifySPV: invalid epoch, ending block not on chain"
+            blockHeaders[blockSequence[blockSequence.length - 1].calculateBlockHash()].height != 0,
+            VerifySPV__registerInclusiveBlock__InvalidEpochEndingBlockNotOnChain()
         );
 
         verifySequence(
-            blockSequence,
-            blockHeaders[blockSequence[0].calculateBlockHash()].height +
-                blockIndex,
-            blockIndex
+            blockSequence, blockHeaders[blockSequence[0].calculateBlockHash()].height + blockIndex, blockIndex
         );
 
+        // @audit y is it updating a latest block hash when the value being modified is in the middle
         LatestBlockHash = blockSequence[blockIndex].calculateBlockHash();
-        blockHashes[
-            blockHeaders[blockSequence[0].calculateBlockHash()].height +
-                blockIndex
-        ] = LatestBlockHash;
+        // @audit update the below code accordingly
+        blockHashes[blockHeaders[blockSequence[0].calculateBlockHash()].height + blockIndex] = LatestBlockHash;
     }
 
     // @dev Verify the inclusion of a transaction in a block
@@ -173,7 +162,7 @@ contract VerifySPV is IVerifySPV {
     // @param txIndex - Index of the transaction in the block
     // @param txHash - Transaction hash to be verified
     // @param proof - Array of merkle proof hashes
-    // @return confirmations - Uint256 indicating the number of confirmations of the block 
+    // @return confirmations - Uint256 indicating the number of confirmations of the block
     function verifyTxInclusion(
         BlockHeader[] calldata blockSequence,
         uint256 blockIndex,
@@ -181,34 +170,29 @@ contract VerifySPV is IVerifySPV {
         bytes32 txHash,
         bytes32[] memory proof
     ) public view returns (uint256) {
-        require(
-            blockIndex < blockSequence.length,
-            "VerifySPV: invalid block index"
-        );
+        require(blockIndex < blockSequence.length, VerifySPV__verifyTxInclusion__InvalidEpochBlockIndex());
 
         require(
             blockHeaders[blockSequence[0].calculateBlockHash()].height != 0,
-            "VerifySPV: invalid epoch, starting block not on chain"
+            VerifySPV__verifyTxInclusion__InvalidEpochStartingBlockNotOnChain()
         );
 
         require(
-            blockHeaders[
-                blockSequence[blockSequence.length - 1].calculateBlockHash()
-            ].height != 0,
-            "VerifySPV: invalid epoch, starting block not on chain"
+            blockHeaders[blockSequence[blockSequence.length - 1].calculateBlockHash()].height != 0,
+            VerifySPV__verifyTxInclusion__InvalidEpochEndingBlockNotOnChain()
         );
 
         verifySequence(
-            blockSequence,
-            blockHeaders[blockSequence[0].calculateBlockHash()].height +
-                blockIndex,
-            blockIndex
+            blockSequence, blockHeaders[blockSequence[0].calculateBlockHash()].height + blockIndex, blockIndex
         );
 
         uint256 prevBlockConfidence = confidenceByHash(blockSequence[blockIndex].previousBlockHash);
-        require(prevBlockConfidence != 0, "VerifySPV: unconfirmed or unrelayed block");
-        require(blockSequence[blockIndex].verifyProof(txHash, txIndex, proof), "VerifySPV: invalid tx inculsion proof");
-        return prevBlockConfidence-1;
+        require(prevBlockConfidence != 0, VerifySPV__verifyTxInclusion__UnconfirmedOrUnrelayedBlock());
+        require(
+            blockSequence[blockIndex].verifyProof(txHash, txIndex, proof),
+            VerifySPV__verifyTxInclusion__InvalidTxInclusionProof()
+        );
+        return prevBlockConfidence - 1;
     }
 
     // @dev Parse and verify the inclusion of a transaction in a block
@@ -217,7 +201,7 @@ contract VerifySPV is IVerifySPV {
     // @param blockIndex - Index of the desired block in the blockSequence
     // @param txIndex - Index of the transaction in the block
     // @param proof - Array of merkle proof hashes
-    // @return confirmations - Uint256 indicating the number of confirmations of the block 
+    // @return confirmations - Uint256 indicating the number of confirmations of the block
     // @return txHash - Hash of the transaction
     // @return prevOuts - Array of previous outputs of inputs in the transaction
     // @return outPoints - Array of outputs of the transaction
@@ -228,24 +212,9 @@ contract VerifySPV is IVerifySPV {
         uint256 txIndex,
         bytes32[] memory proof
     ) public view returns (uint256, bytes32, Prevout[] memory, Outpoint[] memory) {
-        (
-            bytes32 txHash,
-            Prevout[] memory prevOuts,
-            Outpoint[] memory outPoints
-        ) = txHex.parseTx();
+        (bytes32 txHash, Prevout[] memory prevOuts, Outpoint[] memory outPoints) = txHex.parseTx();
 
-        return (
-            verifyTxInclusion(
-                blockSequence,
-                blockIndex,
-                txIndex,
-                txHash,
-                proof
-            ),
-            txHash,
-            prevOuts,
-            outPoints
-        );
+        return (verifyTxInclusion(blockSequence, blockIndex, txIndex, txHash, proof), txHash, prevOuts, outPoints);
     }
 
     // @dev Get confidence of a block by its hash
@@ -253,14 +222,10 @@ contract VerifySPV is IVerifySPV {
     // @dev plus the minimum confidence used to consider the latest block as confirmed
     // @param blockHash - Hash of the block
     function confidenceByHash(bytes32 blockHash) public view returns (uint256) {
-        require(
-            blockHeaders[blockHash].height != 0,
-            "VerifySPV: block not registered"
-        );
-        return
-            blockHeaders[LatestBlockHash].confidence +
-            (blockHeaders[LatestBlockHash].height -
-                blockHeaders[blockHash].height);
+        require(blockHeaders[blockHash].height != 0, VerifySPV__confidenceByHash__BlockNotRegistered());
+
+        return blockHeaders[LatestBlockHash].confidence
+            + (blockHeaders[LatestBlockHash].height - blockHeaders[blockHash].height);
     }
 
     // @dev Get confidence of a block by its height
@@ -268,82 +233,59 @@ contract VerifySPV is IVerifySPV {
         return confidenceByHash(blockHashes[height]);
     }
 
-    function verifySequence(
-        BlockHeader[] calldata blockSequence,
-        uint256 height,
-        uint256 blockIndex
-    ) internal view {
+    function verifySequence(BlockHeader[] calldata blockSequence, uint256 height, uint256 blockIndex) internal view {
         // Testnet3 difficulty adjustment is not as strict as mainnet
         // Testnet4 has different consensus rules
         if (isTestnet) {
-            require(
-                verifySubSequence(blockSequence, 1),
-                "VerifySPV: sequence verification failed"
-            );
+            require(verifySubSequence(blockSequence, 1), VerifySPV__verifySequence__SequenceVerificationFailed());
         }
 
         uint256 epochDivider = blockSequence.length;
         if (height % 2016 == 0) {
             epochDivider = blockIndex;
         } else {
-            uint256 overFlow = (height % 2016) +
-                (blockSequence.length - blockIndex) -
-                1;
+            uint256 overFlow = (height % 2016) + (blockSequence.length - blockIndex) - 1;
             if (overFlow > 2015) {
                 epochDivider -= (overFlow - 2015);
             }
         }
 
-        uint256 target = (
-            abi.encodePacked((blockHeaders[LDEBlockHash].header.nBits))
-        ).convertnBitsToTarget();
+        uint256 target = (abi.encodePacked((blockHeaders[LDEBlockHash].header.nBits))).convertnBitsToTarget();
 
         require(verifySubSequence(blockSequence[:epochDivider], target));
         if (epochDivider < blockSequence.length) {
-            uint256 adjustedTarget = blockSequence[epochDivider]
-                .calculateNewTarget(
-                    target,
-                    blockHeaders[LDEBlockHash].header.timestamp
-                );
-            uint256 newTarget = (
-                abi.encodePacked((blockSequence[epochDivider].nBits))
-            ).convertnBitsToTarget();
+            uint256 adjustedTarget =
+                blockSequence[epochDivider].calculateNewTarget(target, blockHeaders[LDEBlockHash].header.timestamp);
+            uint256 newTarget = (abi.encodePacked((blockSequence[epochDivider].nBits))).convertnBitsToTarget();
             require(
                 LibSPV.verifyDifficultyEpochTarget(adjustedTarget, newTarget),
-                "VerifySPV: adjusted difficulty is not in allowed range"
+                VerifySPV__verifySequence__AdjustedDifficultyNotInAllowedRange()
             );
+
             require(
-                blockSequence[epochDivider - 1].calculateBlockHash() ==
-                    blockSequence[epochDivider].previousBlockHash &&
-                    blockSequence[epochDivider].verifyWork(),
-                "VerifySPV: difficulty epoch validation failed"
+                blockSequence[epochDivider - 1].calculateBlockHash() == blockSequence[epochDivider].previousBlockHash
+                    && blockSequence[epochDivider].verifyWork(),
+                VerifySPV__verifySequence__DifficultyEpochValidationFailed()
             );
             require(
                 verifySubSequence(blockSequence[epochDivider:], newTarget),
-                "VerifySPV: post subsequence in difficulty epoch failed"
+                VerifySPV__verifySequence__PostSubsequenceInDifficultyEpochFailed()
             );
         }
     }
 
-    function verifySubSequence(
-        BlockHeader[] calldata blockSequence,
-        uint256 target
-    ) internal view returns (bool) {
-        for (uint256 i = 1; i < blockSequence.length; i++) {
-            if (
-                !(blockSequence[i - 1].calculateBlockHash() ==
-                    blockSequence[i].previousBlockHash)
-            ) {
+    function verifySubSequence(BlockHeader[] calldata blockSequence, uint256 target) internal view returns (bool) {
+        uint256 blockseqlen = blockSequence.length;
+        // @audit caching the blocksequence len to local scope that will save gas
+        for (uint256 i = 1; i < blockseqlen; i++) {
+            if (!(blockSequence[i - 1].calculateBlockHash() == blockSequence[i].previousBlockHash)) {
                 return false;
             }
 
             if (isTestnet) {
                 return true;
             }
-            if (
-                !blockSequence[i].verifyTarget(target) &&
-                blockSequence[i].verifyWork()
-            ) {
+            if (!blockSequence[i].verifyTarget(target) && blockSequence[i].verifyWork()) {
                 return false;
             }
         }
@@ -352,18 +294,18 @@ contract VerifySPV is IVerifySPV {
     }
 
     enum BTCAddressType {
-        P2PKH,      // Pay to Public Key Hash
-        P2SH,       // Pay to Script Hash
-        P2WPKH,     // Pay to Witness Public Key Hash
-        P2WSH,      // Pay to Witness Script Hash
-        P2TR        // Pay to Taproot
+        P2PKH, // Pay to Public Key Hash
+        P2SH, // Pay to Script Hash
+        P2WPKH, // Pay to Witness Public Key Hash
+        P2WSH, // Pay to Witness Script Hash
+        P2TR // Pay to Taproot
+
     }
 
     struct Callback {
         BTCAddressType addrType;
         SPVCallback callback;
         uint256 rewardPerCall;
-
         uint256 balance;
     }
 
@@ -376,7 +318,13 @@ contract VerifySPV is IVerifySPV {
     // Mapping from pubkeyhash to callback address
     mapping(bytes32 => Callback) public callbacks;
 
-    event UTXOProcessed(bytes32 indexed txHash, uint256 indexed outputIndex, bytes32 indexed pubkeyHash, BTCAddressType addrType, uint256 amount);
+    event UTXOProcessed(
+        bytes32 indexed txHash,
+        uint256 indexed outputIndex,
+        bytes32 indexed pubkeyHash,
+        BTCAddressType addrType,
+        uint256 amount
+    );
 
     /**
      * @notice Registers a callback for when a Bitcoin transaction is processed
@@ -385,12 +333,8 @@ contract VerifySPV is IVerifySPV {
     function registerCallback(bytes calldata spk, SPVCallback callback, uint256 reward) external payable {
         (BTCAddressType addrType, bytes32 pubKeyHash) = extractFromScriptPubKey(spk);
         require(address(callbacks[pubKeyHash].callback) == address(0), "Callback already registered");
-        callbacks[pubKeyHash] = Callback({
-            addrType: addrType,
-            rewardPerCall: reward,
-            callback: callback,
-            balance: msg.value
-        });
+        callbacks[pubKeyHash] =
+            Callback({addrType: addrType, rewardPerCall: reward, callback: callback, balance: msg.value});
     }
 
     /**
@@ -399,7 +343,7 @@ contract VerifySPV is IVerifySPV {
      */
     function fundCallback(bytes32 pubKeyHash) external payable {
         require(address(callbacks[pubKeyHash].callback) != address(0), "Callback not registered");
-        
+
         callbacks[pubKeyHash].balance += msg.value;
     }
 
@@ -414,34 +358,31 @@ contract VerifySPV is IVerifySPV {
     function submitTransaction(
         BlockHeader[] calldata blockSequence,
         bytes calldata txHex,
-        uint256 blockIndex, 
+        uint256 blockIndex,
         uint256 txIndex,
         uint256[] calldata ipIndexes,
         uint256[] calldata opIndexes,
         bytes32[] memory proof
     ) external {
         // Verify the Bitcoin transaction
-        (uint256 confirmations, bytes32 txHash, Prevout[] memory prevOuts, Outpoint[] memory outPoints) = 
-            parseAndVerifyTxInclusion(
-                blockSequence,
-                txHex,
-                blockIndex,
-                txIndex,
-                proof
-            );
+        (uint256 confirmations, bytes32 txHash, Prevout[] memory prevOuts, Outpoint[] memory outPoints) =
+            parseAndVerifyTxInclusion(blockSequence, txHex, blockIndex, txIndex, proof);
 
         require(confirmations >= 6, "Insufficient confirmations");
 
-        if (opIndexes.length > 0) {
-            for (uint256 i = 0; i < opIndexes.length; i++) {
+        uint256 opIndexeslen = opIndexes.length;
+        uint256 outpointsLen = outPoints.length;
+        // @audit caching the array length to a local variable to save gas
+        if (opIndexeslen > 0) {
+            for (uint256 i = 0; i < opIndexeslen; i++) {
                 uint256 opIndex = opIndexes[i];
-                require(opIndex < outPoints.length, "Output index out of bounds");
+                require(opIndex < outpointsLen, "Output index out of bounds");
 
                 require(deposits[keccak256(abi.encodePacked(txHash, opIndex))] == bytes32(0x0), "UTXO already used");
 
                 // Extract the recipient Bitcoin address from output
                 // Assuming P2PKH output format
-                require(outPoints.length > 0, "No outputs found");
+                require(outpointsLen > 0, "No outputs found");
 
                 Outpoint memory op = outPoints[opIndex];
                 (BTCAddressType addrType, bytes32 pubKeyHash) = extractFromScriptPubKey(op.spk);
@@ -459,10 +400,13 @@ contract VerifySPV is IVerifySPV {
             }
         }
 
-        if (ipIndexes.length > 0) {
-            for (uint256 i = 0; i < ipIndexes.length; i++) {
+        uint256 ipIndexeslen = ipIndexes.length;
+        uint256 prevOutLen = prevOuts.length;
+        // @audit caching the array length to a local variable to save gas
+        if (ipIndexeslen > 0) {
+            for (uint256 i = 0; i < ipIndexeslen; i++) {
                 uint256 ipIndex = ipIndexes[i];
-                require(ipIndex < prevOuts.length, "Input index out of bounds");
+                require(ipIndex < prevOutLen, "Input index out of bounds");
                 Prevout memory prevout = prevOuts[ipIndex];
 
                 bytes32 dpkh = deposits[keccak256(abi.encodePacked(prevout.txid, prevout.vout))];
@@ -477,19 +421,24 @@ contract VerifySPV is IVerifySPV {
         }
     }
 
-
     /**
      * @notice Extracts the type and pubkeyhash from a Bitcoin scriptPubKey
      * @param spk The scriptPubKey bytes
      * @return addrType The type of Bitcoin address
      * @return pubkeyHash The extracted pubkeyhash/scripthash
      */
-    function extractFromScriptPubKey(bytes memory spk) public pure returns (BTCAddressType addrType, bytes32 pubkeyHash) {
+    function extractFromScriptPubKey(bytes memory spk)
+        public
+        pure
+        returns (BTCAddressType addrType, bytes32 pubkeyHash)
+    {
         // P2PKH: OP_DUP OP_HASH160 <20 bytes> OP_EQUALVERIFY OP_CHECKSIG
-        if (spk.length == 25 && spk[0] == 0x76 && spk[1] == 0xa9 && spk[2] == 0x14 && spk[23] == 0x88 && spk[24] == 0xac) {
+        if (
+            spk.length == 25 && spk[0] == 0x76 && spk[1] == 0xa9 && spk[2] == 0x14 && spk[23] == 0x88 && spk[24] == 0xac
+        ) {
             return (BTCAddressType.P2PKH, bytes32(Bytes.slice(spk, 3, 23)));
         }
-        
+
         // P2SH: OP_HASH160 <20 bytes> OP_EQUAL
         if (spk.length == 23 && spk[0] == 0xa9 && spk[1] == 0x14 && spk[22] == 0x87) {
             return (BTCAddressType.P2SH, bytes32(Bytes.slice(spk, 2, 22)));
@@ -497,20 +446,19 @@ contract VerifySPV is IVerifySPV {
 
         // P2WPKH: OP_0 <20 bytes>
         if (spk.length == 22 && spk[0] == 0x00 && spk[1] == 0x14) {
-            return (BTCAddressType.P2WPKH,  bytes32(Bytes.slice(spk, 2)));
+            return (BTCAddressType.P2WPKH, bytes32(Bytes.slice(spk, 2)));
         }
 
         // P2WSH: OP_0 <32 bytes>
         if (spk.length == 34 && spk[0] == 0x00 && spk[1] == 0x20) {
-            return (BTCAddressType.P2WSH,  bytes32(Bytes.slice(spk, 2)));
+            return (BTCAddressType.P2WSH, bytes32(Bytes.slice(spk, 2)));
         }
 
         // P2TR: OP_1 <32 bytes>
         if (spk.length == 34 && spk[0] == 0x01 && spk[1] == 0x20) {
-            return (BTCAddressType.P2TR,  bytes32(Bytes.slice(spk, 2)));
+            return (BTCAddressType.P2TR, bytes32(Bytes.slice(spk, 2)));
         }
 
         revert("SPV: unsupported scriptPubKey");
     }
 }
-
