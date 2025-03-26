@@ -6,59 +6,6 @@ import {Script, console} from "forge-std/Script.sol";
 import {VerifySPV, BlockHeader, LibBitcoin} from "../src/VerifySPV.sol";
 import "forge-std/StdJson.sol";
 
-// contract SPVDeploy is Script {
-//     using stdJson for string;
-
-//     struct FixtureBlockHeader {
-//         bytes4 version;
-//         bytes32 previousblockhash;
-//         bytes32 merkleroot;
-//         bytes4 time;
-//         bytes4 bits;
-//         bytes4 nonce;
-//     }
-
-//     BlockHeader[] difficultyEpoch;
-
-//     function toBlockHeader(FixtureBlockHeader memory f) private pure returns (BlockHeader memory) {
-//         return BlockHeader({
-//             version: f.version,
-//             previousBlockHash: f.previousblockhash,
-//             merkleRootHash: f.merkleroot,
-//             timestamp: f.time,
-//             nBits: f.bits,
-//             nonce: f.nonce
-//         });
-//     }
-
-//     function run() public {
-//         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-//         vm.startBroadcast(deployerPrivateKey);
-
-//         string memory root = vm.projectRoot();
-//         string memory path = string.concat(root, "/script/blockheader.json");
-
-//         // Read JSON file
-//         string memory json = vm.readFile(path);
-//         console.log("JSON Contents: ", json); // Debugging line
-
-//         // Parse JSON from the string, NOT the path
-//         // bytes memory parsedJson = vm.parseJson(json, "");
-
-//         // Decode JSON into struct array
-//         (FixtureBlockHeader[] memory f) = abi.decode(json.parseRaw(""), (FixtureBlockHeader[]));
-//         console.log("f.length: ", f.length);
-
-//         for (uint256 i = 0; i < f.length; i++) {
-//             difficultyEpoch.push(toBlockHeader(f[i]));
-//         }
-
-//         new VerifySPV(toBlockHeader(f[0]), 1, 1, true);
-
-//         vm.stopBroadcast();
-//     }
-// }
-
 contract SPVDeploy is Script {
     using stdJson for string;
 
@@ -74,9 +21,8 @@ contract SPVDeploy is Script {
 
         // Parse fields individually with proper types
         // uint256 length = stdJson.readUint(json, ".length");
-        uint256 length = 5;
 
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < 1; i++) {
             string memory base = string.concat("[", vm.toString(i), "]");
 
             BlockHeader memory header;
@@ -92,7 +38,7 @@ contract SPVDeploy is Script {
 
         console.log("Loaded %d block headers", difficultyEpoch.length);
 
-        new VerifySPV(difficultyEpoch[0], 0, 1, false);
+        new VerifySPV(difficultyEpoch[0], 0, 1, true);
 
         vm.stopBroadcast();
     }

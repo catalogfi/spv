@@ -6,6 +6,8 @@ import {LibSPV} from "./libraries/LibSPV.sol";
 import {BlockHeader, Prevout, Outpoint, LibBitcoin} from "./libraries/LibBitcoin.sol";
 import {Bytes} from "@openzeppelin/contracts/utils/Bytes.sol";
 
+import {console} from "forge-std/console.sol";
+
 struct BlockRecord {
     BlockHeader header;
     uint256 confidence;
@@ -154,6 +156,9 @@ contract VerifySPV is IVerifySPV {
         LatestBlockHash = blockSequence[blockIndex].calculateBlockHash();
         // @audit update the below code accordingly
         blockHashes[blockHeaders[blockSequence[0].calculateBlockHash()].height + blockIndex] = LatestBlockHash;
+
+        // @audit added the event emission 
+        emit BlockRegistered(LatestBlockHash, blockHeaders[LatestBlockHash].height);
     }
 
     // @dev Verify the inclusion of a transaction in a block
@@ -281,7 +286,6 @@ contract VerifySPV is IVerifySPV {
             if (!(blockSequence[i - 1].calculateBlockHash() == blockSequence[i].previousBlockHash)) {
                 return false;
             }
-
             if (isTestnet) {
                 return true;
             }
