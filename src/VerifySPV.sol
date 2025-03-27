@@ -157,7 +157,7 @@ contract VerifySPV is IVerifySPV {
         // @audit update the below code accordingly
         blockHashes[blockHeaders[blockSequence[0].calculateBlockHash()].height + blockIndex] = LatestBlockHash;
 
-        // @audit added the event emission 
+        // @audit added the event emission
         emit BlockRegistered(LatestBlockHash, blockHeaders[LatestBlockHash].height);
     }
 

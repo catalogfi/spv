@@ -1,19 +1,22 @@
 
 mod rpc_call_to_get_transactions;
 mod rpc_call_to_get_blockheader;
+mod merkle_proof;
+
 
 use rpc_call_to_get_transactions::call_rpc_for_transactions;
 use rpc_call_to_get_blockheader::call_rpc_for_blockheader;
+use merkle_proof::generate_merkle_proof;
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // pass the blockhash you want to get the data
-    // call_rpc_for_blockheader("0a14b5bdf010bf3a147533bee4757683957533d6bc69589398cf2b672d04af6a").await?;
+    // call_rpc_for_blockheader("54e5f935cb2219e9faa54a6f01d6e3d16a6355ee86fe8a067ef6b5add49e7aa9").await?;
 
-    call_rpc_for_transactions("768e6be748c56927007e91bacb2126eb993e5b9155c8a9502d9734e5cab88b03")
-        .await?;
+    // call_rpc_for_transactions("173166296e3f9ef2a6dec5e1e288f7001423b8db9654a30d29999cc2a0c64e4d")
+    //     .await?;
 
-    // let x = get_merkle_leaf("18ab8e1a9bf1d5d0309783bc61b24a49786d8e46b5a07c60d44c06bb0729092a", "fb24b20d7bb07b7735f67767af1f279bc283ebce37bf6f10cad0f4440670bd38").await;
-    // println!("{:?}", x);
+    generate_merkle_proof("0x4d4ec6a0c29c99290da35496dbb8231400f788e2e1c5dea6f29e3f6e29663117", "0x6c01cec5275b19bfa26413513111066732b6f4163581c203cdf6cbdd2385219b")?;
 
     Ok(())
 }

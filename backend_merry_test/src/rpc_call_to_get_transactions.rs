@@ -63,8 +63,8 @@ pub async fn call_rpc_for_transactions(blockhash: &str) -> Result<(), Box<dyn st
     let transactions = match parsed_response.result {
     Value::Object(ref obj) => obj.get("tx").and_then(|v| v.as_array()).map(|txs| {
         txs.iter()
-            .filter_map(|tx| tx.as_str())  // ✅ Directly extract string TXIDs
-            .map(|s| format!("0x{}", reverse_hex(s)))  // ✅ Reverse for little-endian
+            .filter_map(|tx| tx.as_str()) 
+            .map(|s| format!("0x{}", reverse_hex(s)))  
             .collect()
     }),
     _ => None,
@@ -72,7 +72,7 @@ pub async fn call_rpc_for_transactions(blockhash: &str) -> Result<(), Box<dyn st
 
 if let Some(tx_list) = transactions {
     let block_data = BlockTransactions {
-        blockhash: format!("0x{}", reverse_hex(blockhash)),  // ✅ Ensure blockhash is also little-endian
+        blockhash: format!("0x{}", reverse_hex(blockhash)),  
         transactions: tx_list,
     };
 
