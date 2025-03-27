@@ -197,6 +197,7 @@ contract VerifySPV is IVerifySPV {
             blockSequence[blockIndex].verifyProof(txHash, txIndex, proof),
             VerifySPV__verifyTxInclusion__InvalidTxInclusionProof()
         );
+        console.log("The transaction is verified..");
         return prevBlockConfidence - 1;
     }
 

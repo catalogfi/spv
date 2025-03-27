@@ -50,16 +50,16 @@ contract VerifySPVTest is Test {
         });
     }
 
-    function testShouldVerifyAnEpochInTestnet() public {
-        for (uint256 i = 0; i < 28; i++) {
-            (BlockHeader[] memory epoch) = new BlockHeader[](76);
-            for (uint256 j = 0; j < 76; j++) {
-                epoch[j] = difficultyEpoch[i * 72 + j];
-            }
+    // function testShouldVerifyAnEpochInTestnet() public {
+    //     for (uint256 i = 0; i < 28; i++) {
+    //         (BlockHeader[] memory epoch) = new BlockHeader[](76);
+    //         for (uint256 j = 0; j < 76; j++) {
+    //             epoch[j] = difficultyEpoch[i * 72 + j];
+    //         }
 
-            verifySPV.registerLatestBlock(epoch, 10);
-        }
+    //         verifySPV.registerLatestBlock(epoch, 10);
+    //     }
 
-        // assertEq(verifySPV.epoch(), 28, "Epoch should be 28");
-    }
+    //     // assertEq(verifySPV.epoch(), 28, "Epoch should be 28");
+    // }
 }

@@ -68,5 +68,15 @@ contract TestSPV is Test {
         proof[0] = 0xbee705c560dad3adc2482075c076fc05d04c64ab0f27632ce827d7706c53d1cb;
 
         LibSPV.verifyProof(header, 0xfb24b20d7bb07b7735f67767af1f279bc283ebce37bf6f10cad0f4440670bd38, 0, proof);
-    }    
+    }   
+    
+    function test_proofRecreate() public pure  {
+        bytes32 x = 0x86560b23cf85525bb9f9a890e0d4bb809f564e5e623bbf621ccd6246e1953e55;
+        bytes32 y = 0x244fd62704eb0158eb3696fa2f72c25674d51ef465acdee137cbdb69ce1b7891;
+
+
+        bytes32 result = LibSPV.concatHash(x, y);
+        assert(result == 0x3158ff37b752dc51926e36aef0261a9a3cc7b95e69fdbd2576f9566ecc7947ec);
+    }
+
 }

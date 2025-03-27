@@ -32,7 +32,8 @@ library LibSPV {
         pure
         returns (bool)
     {
-        bytes32 result = abi.encodePacked(txHash).convertToBigEndian().convertToBytes32();
+        // bytes32 result = abi.encodePacked(txHash).convertToBigEndian().convertToBytes32();
+        bytes32 result = abi.encodePacked(txHash).convertToBytes32();
 
         uint256 proofLen = proof.length;
 
