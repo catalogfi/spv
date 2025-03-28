@@ -12,7 +12,7 @@ contract SPVInteraction is Script {
 
     BlockHeader[] difficultyEpoch;
 
-    VerifySPV verifySPV = VerifySPV(address(0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1));
+    VerifySPV verifySPV = VerifySPV(address(0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44));
 
     function run() public {
         string memory root = vm.projectRoot();
@@ -61,15 +61,15 @@ contract SPVInteraction is Script {
         vm.startBroadcast(deployerPrivateKey);
         bytes32[] memory proof = new bytes32[](4);
 
-        // proof[0] = 0x38bd7060444f0dca106fbf37ceeb83c29b271faf6777f635777bb07b0db224fb;
         proof[0] = 0xc308000b4e912907f53abea9d0517d30b634a827153b0f91e77ca34a480f440e;
-        proof[1] = 0xf2d8822c7c4d16f185333d31534de1238b14154faf33796f62ae05d191188b88;
-        proof[2] = 0x9b5ff453452016268981b0ea0bfbb972b0a39f98c12233cdc803c0febf42942c;
-        proof[3] = 0x2e7fc9543eb703c29ba44f9aef22ea0dfc6763b5df5feb4a3f9c99025751ca55;
+        proof[1] = 0x94b6c7d8a232f5ec7e4d39bce0d6c134bc789be99b154d9a5cae0fabd22e0b20;
+        proof[2] = 0x14feb8179061d42d350abf2a009176d82bcc5f32a84ed4a9c0165dde0e4285bb;
+        proof[3] = 0xa28c327dede8b27e1e4cc3e0d373bc91361bb7f4370aea686b70d22e9c3605fb;
 
         uint256 x = verifySPV.verifyTxInclusion(
             difficultyEpoch, 1, 0, 0x6c01cec5275b19bfa26413513111066732b6f4163581c203cdf6cbdd2385219b, proof
         );
+        console.logUint(x);
         // assert(x == 5);
         vm.stopBroadcast();
     }

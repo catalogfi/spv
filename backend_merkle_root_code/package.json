@@ -1,0 +1,14 @@
+{
+  "name": "merkle_proof_generator_for_bitcoin",
+  "version": "1.0.0",
+  "description": "generates a merkle proof for bitcoin transactions in reverse bytes order and a merkle proof for bitcoin transaction in natural order ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bitcoin-proof": "^2.0.0"
+  }
+}

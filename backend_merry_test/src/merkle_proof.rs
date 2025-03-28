@@ -16,12 +16,11 @@ struct MerkleProof {
     proof: Vec<String>,
 }
 
-/// Performs double SHA-256 hashing on a hex string while preserving little-endian format.
-fn double_sha256(hex: &str) -> String {
-    let bytes = hex::decode(hex.strip_prefix("0x").unwrap_or(hex)).expect("Invalid hex input");
-    let hash1 = Sha256::digest(&bytes);
+/// Performs double SHA-256 hashing on a byte slice
+fn double_sha256(bytes: &[u8]) -> Vec<u8> {
+    let hash1 = Sha256::digest(bytes);
     let hash2 = Sha256::digest(&hash1);
-    format!("0x{}", hex::encode(hash2))
+    hash2.to_vec()
 }
 
 /// Generates a Merkle proof for a specific transaction in a block
@@ -39,9 +38,11 @@ pub fn generate_merkle_proof(blockhash: &str, txid: &str) -> Result<(), Box<dyn 
     let tx_index = block.transactions.iter().position(|t| t == txid)
         .ok_or_else(|| "Transaction not found in block".to_string())?;
 
-    let mut hashes: Vec<String> = block.transactions
+    // Convert transactions to raw bytes before hashing
+    let mut hashes: Vec<Vec<u8>> = block.transactions
         .iter()
-        .map(|tx| double_sha256(tx))
+        .map(|tx| hex::decode(tx).expect("Invalid hex input"))
+        .map(|bytes| double_sha256(&bytes))
         .collect();
     
     let mut proof = Vec::new();
@@ -58,12 +59,14 @@ pub fn generate_merkle_proof(blockhash: &str, txid: &str) -> Result<(), Box<dyn 
             let right = &hashes[i + 1];
 
             if current_index == i {
-                proof.push(right.clone());
+                proof.push(hex::encode(right));
             } else if current_index == i + 1 {
-                proof.push(left.clone());
+                proof.push(hex::encode(left));
             }
 
-            let combined = format!("{}{}", left.strip_prefix("0x").unwrap(), right.strip_prefix("0x").unwrap());
+            let mut combined = Vec::new();
+            combined.extend(left);
+            combined.extend(right);
             let parent_hash = double_sha256(&combined);
             next_level.push(parent_hash);
         }

@@ -3,6 +3,7 @@ pragma solidity 0.8.27;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {LibBitcoin, BlockHeader} from "./LibBitcoin.sol";
+import {console} from "forge-std/console.sol";
 
 library LibSPV {
     using Math for uint256;
@@ -27,6 +28,13 @@ library LibSPV {
         return (headerData).doubleHash();
     }
 
+    /**
+     * @notice pass everything in little endian format
+     * @param header the blockheader to verify
+     * @param txHash the transaction in little endian format 
+     * @param txIndex the index of the transaction in the block 
+     * @param proof the merkle proof in little endian format
+     */
     function verifyProof(BlockHeader memory header, bytes32 txHash, uint256 txIndex, bytes32[] memory proof)
         internal
         pure
@@ -34,6 +42,7 @@ library LibSPV {
     {
         // bytes32 result = abi.encodePacked(txHash).convertToBigEndian().convertToBytes32();
         bytes32 result = abi.encodePacked(txHash).convertToBytes32();
+        console.logBytes32(result);
 
         uint256 proofLen = proof.length;
 
@@ -47,6 +56,9 @@ library LibSPV {
             txIndex /= 2;
         }
 
+        console.logBytes32(result);
+
+        // bytes32 reversedMerkleRoot = abi.encodePacked(header.merkleRootHash).convertToBigEndian().convertToBytes32();
         return header.merkleRootHash == result;
     }
 

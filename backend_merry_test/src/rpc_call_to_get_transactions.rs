@@ -26,17 +26,14 @@ pub struct Request {
     pub id: String,
 }
 
+/// Reverse a hex string to handle endian conversion
 fn reverse_hex(hex: &str) -> String {
     hex::decode(hex)
-        .ok()
-        .map(|bytes| {
-            bytes.chunks(1)
-                .rev()
-                .flat_map(|b| b.iter())
-                .map(|b| format!("{:02x}", b))
-                .collect::<String>()
+        .map(|mut bytes| {
+            bytes.reverse();
+            hex::encode(bytes)
         })
-        .unwrap_or_else(|| hex.to_string())
+        .unwrap_or_else(|_| hex.to_string())
 }
 
 pub async fn call_rpc_for_transactions(blockhash: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -61,45 +58,45 @@ pub async fn call_rpc_for_transactions(blockhash: &str) -> Result<(), Box<dyn st
     let parsed_response: BitcoinRpcResponse = serde_json::from_str(&response_text)?;
 
     let transactions = match parsed_response.result {
-    Value::Object(ref obj) => obj.get("tx").and_then(|v| v.as_array()).map(|txs| {
-        txs.iter()
-            .filter_map(|tx| tx.as_str()) 
-            .map(|s| format!("0x{}", reverse_hex(s)))  
-            .collect()
-    }),
-    _ => None,
-};
-
-if let Some(tx_list) = transactions {
-    let block_data = BlockTransactions {
-        blockhash: format!("0x{}", reverse_hex(blockhash)),  
-        transactions: tx_list,
+        Value::Object(ref obj) => obj.get("tx").and_then(|v| v.as_array()).map(|txs| {
+            txs.iter()
+                .filter_map(|tx| tx.as_str())
+                .map(|s| reverse_hex(s)) // Convert to little-endian before storing
+                .collect()
+        }),
+        _ => None,
     };
 
-    let file_path = "block_transactions.json";
-    let mut records: Vec<BlockTransactions> = if Path::new(file_path).exists() {
-        let mut file = File::open(file_path)?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
+    if let Some(tx_list) = transactions {
+        let block_data = BlockTransactions {
+            blockhash: reverse_hex(blockhash), // Convert blockhash to little-endian before storing
+            transactions: tx_list,
+        };
 
-        if contents.trim().is_empty() {
-            Vec::new()
+        let file_path = "block_transactions.json";
+        let mut records: Vec<BlockTransactions> = if Path::new(file_path).exists() {
+            let mut file = File::open(file_path)?;
+            let mut contents = String::new();
+            file.read_to_string(&mut contents)?;
+
+            if contents.trim().is_empty() {
+                Vec::new()
+            } else {
+                serde_json::from_str(&contents).unwrap_or_else(|_| Vec::new())
+            }
         } else {
-            serde_json::from_str(&contents).unwrap_or_else(|_| Vec::new())
-        }
+            Vec::new()
+        };
+
+        records.push(block_data);
+        let json_string = serde_json::to_string_pretty(&records)?;
+
+        let mut file = File::create(file_path)?;
+        file.write_all(json_string.as_bytes())?;
+
+        println!("Successfully saved block transactions to {}", file_path);
     } else {
-        Vec::new()
-    };
-
-    records.push(block_data);
-    let json_string = serde_json::to_string_pretty(&records)?;
-
-    let mut file = File::create(file_path)?;
-    file.write_all(json_string.as_bytes())?;
-
-    println!("Successfully saved block transactions to {}", file_path);
-} else {
-    eprintln!("Failed to extract transactions from response");
-}
+        eprintln!("Failed to extract transactions from response");
+    }
     Ok(())
 }
