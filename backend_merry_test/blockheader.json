@@ -62,5 +62,13 @@
     "time": "0x8717e567",
     "bits": "0xffff7f20",
     "nonce": "0x00000000"
+  },
+  {
+    "version": "0x00000030",
+    "previousblockhash": "0xa97a9ed4adb5f67e068afe86ee55636ad1e3d6016f4aa5fae91922cb35f9e554",
+    "merkleroot": "0x5fb2530ac0b2459163277fa321fc1141dccd2ed910bda7e977a5d7b2e40a9bcd",
+    "time": "0xf92ae667",
+    "bits": "0xffff7f20",
+    "nonce": "0x00000000"
   }
 ]
