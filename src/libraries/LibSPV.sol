@@ -31,8 +31,8 @@ library LibSPV {
     /**
      * @notice pass everything in little endian format
      * @param header the blockheader to verify
-     * @param txHash the transaction in little endian format 
-     * @param txIndex the index of the transaction in the block 
+     * @param txHash the transaction in little endian format
+     * @param txIndex the index of the transaction in the block
      * @param proof the merkle proof in little endian format
      */
     function verifyProof(BlockHeader memory header, bytes32 txHash, uint256 txIndex, bytes32[] memory proof)

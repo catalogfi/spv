@@ -8,6 +8,7 @@ use std::path::Path;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct BlockTransactions {
     pub blockhash: String,
+    pub blockheight: u64,
     pub transactions: Vec<String>,
 }
 
@@ -22,7 +23,7 @@ pub struct BitcoinRpcResponse {
 pub struct Request {
     pub jsonrpc: String,
     pub method: String,
-    pub params: Vec<String>,
+    pub params: Vec<Value>,
     pub id: String,
 }
 
@@ -36,15 +37,42 @@ fn reverse_hex(hex: &str) -> String {
         .unwrap_or_else(|_| hex.to_string())
 }
 
-pub async fn call_rpc_for_transactions(blockhash: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn call_rpc_for_transactions(blockheight: u64) -> Result<(), Box<dyn std::error::Error>> {
+    // First, get the block hash from the block height
+    let hash_request_body = Request {
+        jsonrpc: "1.0".to_string(),
+        id: "curltest".to_string(),
+        method: "getblockhash".to_string(),
+        params: vec![Value::from(blockheight)],
+    };
+
+    let client = reqwest::Client::new();
+    let hash_res = client
+        .post("http://localhost:18443")
+        .basic_auth("admin1".to_owned(), Some("123".to_owned()))
+        .json(&hash_request_body)
+        .send()
+        .await?;
+
+    let hash_response_text = hash_res.text().await?;
+    let hash_parsed_response: BitcoinRpcResponse = serde_json::from_str(&hash_response_text)?;
+
+    let blockhash = match hash_parsed_response.result {
+        Value::String(hash) => hash,
+        _ => {
+            eprintln!("Failed to retrieve block hash");
+            return Ok(());
+        }
+    };
+
+    // Now get the block details
     let request_body = Request {
         jsonrpc: "1.0".to_string(),
         id: "curltest".to_string(),
         method: "getblock".to_string(),
-        params: vec![blockhash.to_string()],
+        params: vec![Value::from(blockhash.clone())],
     };
 
-    let client = reqwest::Client::new();
     let res = client
         .post("http://localhost:18443")
         .basic_auth("admin1".to_owned(), Some("123".to_owned()))
@@ -69,7 +97,8 @@ pub async fn call_rpc_for_transactions(blockhash: &str) -> Result<(), Box<dyn st
 
     if let Some(tx_list) = transactions {
         let block_data = BlockTransactions {
-            blockhash: reverse_hex(blockhash), // Convert blockhash to little-endian before storing
+            blockhash: reverse_hex(&blockhash), // Convert blockhash to little-endian before storing
+            blockheight,
             transactions: tx_list,
         };
 

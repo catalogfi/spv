@@ -64,7 +64,7 @@ contract TestSPV is Test {
     // proof.push(0xbee705c560dad3adc2482075c076fc05d04c64ab0f27632ce827d7706c53d1cb);
 
     function test_proof() public view {
-       bytes32[] memory proof = new bytes32[](5);
+        bytes32[] memory proof = new bytes32[](5);
 
         // proof[0] = 0xbeb540fb0ac38c95d78ba727a4c10ba2878696bdf52d177ca15eed99c9fef41d;
         // proof[1] = 0x056c7c24fa1354e5a48d451154e22e420aa542867abeaa6b203ece181ccdac52;
@@ -77,7 +77,8 @@ contract TestSPV is Test {
         proof[4] = 0xb23d9b2085f89659482050ba1d2c488c9adfb9ea96bf2d788078c65813b2579a;
 
         // LibSPV.verifyProof(header, 0x6c01cec5275b19bfa26413513111066732b6f4163581c203cdf6cbdd2385219b, 0, proof);
-        bool returnVal = LibSPV.verifyProof(header, 0x442277db570ed285d190b7104e7610526ea44dcee34318eae35eeee97d6dfad1, 7, proof);
+        bool returnVal =
+            LibSPV.verifyProof(header, 0x442277db570ed285d190b7104e7610526ea44dcee34318eae35eeee97d6dfad1, 7, proof);
         assert(returnVal == true);
     }
 
@@ -88,6 +89,4 @@ contract TestSPV is Test {
     //     bytes32 result = LibSPV.concatHash(x, y);
     //     assert(result == 0x3158ff37b752dc51926e36aef0261a9a3cc7b95e69fdbd2576f9566ecc7947ec);
     // }
-
-    
 }

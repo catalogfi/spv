@@ -152,23 +152,23 @@ contract VerifySPV is IVerifySPV {
             blockSequence, blockHeaders[blockSequence[0].calculateBlockHash()].height + blockIndex, blockIndex
         );
 
-
-        // @audit doenst update the code to keep track of the registered block -- without it is causing error 
+        // @audit doenst update the code to keep track of the registered block -- without it is causing error
         uint256 newHeight = blockHeaders[blockSequence[0].calculateBlockHash()].height + blockIndex;
         bytes32 newEpochBlockHash = blockSequence[blockIndex].calculateBlockHash();
-        blockHeaders[newEpochBlockHash] =
-            BlockRecord({header: blockSequence[blockIndex], confidence: blockSequence.length - blockIndex - 1, height: newHeight});
-
-
-
+        blockHeaders[newEpochBlockHash] = BlockRecord({
+            header: blockSequence[blockIndex],
+            confidence: blockSequence.length - blockIndex - 1,
+            height: newHeight
+        });
 
         // @audit y is it updating a latest block hash when the value being modified is in the middle
-        LatestBlockHash = blockSequence[blockIndex].calculateBlockHash();
-        // @audit update the below code accordingly
-        blockHashes[blockHeaders[blockSequence[0].calculateBlockHash()].height + blockIndex] = LatestBlockHash;
+        // bytes32 currentblockHash = blockSequence[blockIndex].calculateBlockHash();
+
+        // // @audit update the below code accordingly
+        blockHashes[blockHeaders[blockSequence[0].calculateBlockHash()].height + blockIndex] = newEpochBlockHash;
 
         // @audit added the event emission
-        emit BlockRegistered(LatestBlockHash, blockHeaders[LatestBlockHash].height);
+        emit BlockRegistered(newEpochBlockHash, blockHeaders[newEpochBlockHash].height);
     }
 
     // @dev Verify the inclusion of a transaction in a block
@@ -201,7 +201,7 @@ contract VerifySPV is IVerifySPV {
             blockSequence, blockHeaders[blockSequence[0].calculateBlockHash()].height + blockIndex, blockIndex
         );
 
-        // @audit have a look at this.. 
+        // @audit have a look at this..
         uint256 prevBlockConfidence = confidenceByHash(blockSequence[blockIndex].previousBlockHash);
         require(prevBlockConfidence != 0, VerifySPV__verifyTxInclusion__UnconfirmedOrUnrelayedBlock());
         require(
@@ -241,7 +241,7 @@ contract VerifySPV is IVerifySPV {
     function confidenceByHash(bytes32 blockHash) public view returns (uint256) {
         require(blockHeaders[blockHash].height != 0, VerifySPV__confidenceByHash__BlockNotRegistered());
 
-        // @audit check this why is it like that 
+        // @audit check this why is it like that
         return blockHeaders[LatestBlockHash].confidence
             + (blockHeaders[LatestBlockHash].height - blockHeaders[blockHash].height);
     }
