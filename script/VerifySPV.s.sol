@@ -38,7 +38,7 @@ contract SPVDeploy is Script {
 
         console.log("Loaded %d block headers", difficultyEpoch.length);
 
-        new VerifySPV(difficultyEpoch[0], 0, 1, true);
+        new VerifySPV(difficultyEpoch[0], 0, 144, true);
 
         vm.stopBroadcast();
     }

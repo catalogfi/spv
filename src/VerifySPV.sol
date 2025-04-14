@@ -5,7 +5,6 @@ import {IVerifySPV, ISPV, SPVCallback} from "./interfaces/IVerifySPV.sol";
 import {LibSPV} from "./libraries/LibSPV.sol";
 import {BlockHeader, Prevout, Outpoint, LibBitcoin} from "./libraries/LibBitcoin.sol";
 import {Bytes} from "@openzeppelin/contracts/utils/Bytes.sol";
-
 import {console} from "forge-std/console.sol";
 
 struct BlockRecord {
@@ -256,8 +255,7 @@ contract VerifySPV is IVerifySPV {
         // Testnet4 has different consensus rules
         if (isTestnet) {
             require(verifySubSequence(blockSequence, 1), VerifySPV__verifySequence__SequenceVerificationFailed());
-        }
-
+        } else {
         uint256 epochDivider = blockSequence.length;
         if (height % 2016 == 0) {
             epochDivider = blockIndex;
@@ -272,9 +270,11 @@ contract VerifySPV is IVerifySPV {
 
         require(verifySubSequence(blockSequence[:epochDivider], target));
         if (epochDivider < blockSequence.length) {
+
             uint256 adjustedTarget =
                 blockSequence[epochDivider].calculateNewTarget(target, blockHeaders[LDEBlockHash].header.timestamp);
             uint256 newTarget = (abi.encodePacked((blockSequence[epochDivider].nBits))).convertnBitsToTarget();
+
             require(
                 LibSPV.verifyDifficultyEpochTarget(adjustedTarget, newTarget),
                 VerifySPV__verifySequence__AdjustedDifficultyNotInAllowedRange()
@@ -289,7 +289,8 @@ contract VerifySPV is IVerifySPV {
                 verifySubSequence(blockSequence[epochDivider:], newTarget),
                 VerifySPV__verifySequence__PostSubsequenceInDifficultyEpochFailed()
             );
-        }
+        } 
+    }
     }
 
     function verifySubSequence(BlockHeader[] calldata blockSequence, uint256 target) internal view returns (bool) {
@@ -300,13 +301,17 @@ contract VerifySPV is IVerifySPV {
                 return false;
             }
             if (isTestnet) {
+                if (i < blockseqlen - 1) {
+                    continue;
+                }
                 return true;
             }
-            if (!blockSequence[i].verifyTarget(target) && blockSequence[i].verifyWork()) {
+            if (!isTestnet) {
+                if (!blockSequence[i].verifyTarget(target) && blockSequence[i].verifyWork()) {
                 return false;
             }
+            }
         }
-
         return true;
     }
 

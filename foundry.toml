@@ -2,11 +2,16 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+optimizer_runs = 20000
+libraries = [
+    "src/libraries/LibBitcoin.sol:LibBitcoin:0x0E367BC3aF898e80F805931119C62C3BE9afbAdA"
+  ]
 remappings = [
   '@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/',
   'forge-std/=lib/forge-std/src/',
   'murky/=lib/murky',
 ]
-fs_permissions = [{ access = "read", path = "./test/fixtures"},{ access = "read", path = "./script"}]
+fs_permissions = [{ access = "read", path = "./test/fixtures"},{ access = "read", path = "./script"}, {access = "read", path = "./"}]
 evm_version = "cancun"
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
